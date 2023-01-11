@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Titilivate Couture & Style</title>
     <link rel="stylesheet" href="assets/ticost.css">
-    <link rel="stylesheet" href="assets/css/fontawesome-css/all.min.css">
+    <link rel="stylesheet" href="assets/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="assets/css/adminlte.min.css">
     
     <!-- <link rel="stylesheet" href="assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">     -->

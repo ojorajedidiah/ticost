@@ -327,8 +327,8 @@ function buildNewForm()
 
   $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealMaterial">Manufacturing Cost</label>';
   $rtn .= '<input type="text" class="form-control" name="dealMenu" id="dealMenu">';
-  $rtn.= '<label for="dealProfit">Amount Charged</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealProfit" id="dealProfit">';
+  $rtn .= '<label for="dealAmount">Amount Charged</label>';
+  $rtn .= '<input type="text" class="form-control" name="dealAmount" id="dealAmount">';
   $rtn .= '<label for="dealDescription">Deal Description</label>';
   $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" required></textarea></div>';
 
