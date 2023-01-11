@@ -256,15 +256,19 @@ function loadClientStatus($rec)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientDetails,clientWhatsAppNum,clientCreatedDate 
-        FROM clients WHERE clientID=:id";
+      $sql = "SELECT clientID,clientStatus FROM clients WHERE clientID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
 
       foreach ($stmt->fetchAll() as $row) {
-        $rtn = $row;
+        if ($row['clientStatus'] == 'active') {
+          $rtn .= '<option selected values="'. $row['clientStatus'].'">'.$row['clientStatus'] .'</option>';
+        } else {
+          
+        }
+        
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
