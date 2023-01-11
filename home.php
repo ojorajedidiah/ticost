@@ -20,6 +20,12 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
   });
 
 </script>
+<script type="text/javascript">
+  function updateDueDate()
+  {
+
+  }
+</script>
 
 
   <body class="hold-transition layout-top-nav">
@@ -38,8 +44,8 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
                     </div>
                     <div class="col-sm-6">
                       <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="">Home</a></li>
-                        <li class="breadcrumb-item acive"> <?php echo namePage(); ?> </li>
+                        <li class="breadcrumb-item"><a href="home.php">Home</a></li>
+                        <li class="breadcrumb-item active"> <?php echo namePage(); ?> </li>
                       </ol>
                     </div>
                   </div>

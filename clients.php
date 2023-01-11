@@ -14,7 +14,7 @@ if (isset($_REQUEST['saveRec'])) {
 
 if (isset($_POST['updateRec'])) {
   if (canSaveEdit()) {
-    $errMsg = UpdateClient();
+    $errMsg = updateClient();
     $_REQUEST['v'] = "update";
   } else {
     $errMsg = $_SESSION['clnErr'];
@@ -23,13 +23,13 @@ if (isset($_POST['updateRec'])) {
 }
 
 if (isset($_POST['deleteRec'])) {
-  // if (canSaveEdit()) {
-  //   $errMsg = UpdateMsg();
-  //   $_REQUEST['v'] = "update";
-  // }else {
-  //   $errMsg=$_SESSION['clnErr'];
-  //   $_REQUEST['v'] = "edit";
-  // }  
+  if (canDisable()) {
+    $errMsg = disableClient();
+    $_REQUEST['v'] = "update";
+  }else {
+    $errMsg=$_SESSION['clnErr'];
+    $_REQUEST['v'] = "disable";
+  }  
 }
 ?>
 
@@ -139,7 +139,7 @@ function createNewClient()
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The new Client <b>[" . $_REQUEST['clientName'] . "...]</b> has been created!";
+        $rtn = "The new client <b>" . $_REQUEST['clientName'] . "</b> has been created!";
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -152,7 +152,7 @@ function createNewClient()
   return ($rtn == '') ? 'No Client Data' : $rtn;
 }
 
-function UpdateClient()
+function updateClient()
 {
   $rtn = '';
   try {
@@ -184,7 +184,7 @@ function UpdateClient()
     trigger_error($e->getMessage(), E_USER_NOTICE);
   }
 
-  return ($rtn == '') ? 'No Client Data' : $rtn;
+  return ($rtn == '') ? 'No client data to update' : $rtn;
 }
 
 function getClientRecords()
@@ -264,11 +264,13 @@ function loadClientStatus($rec)
 
       foreach ($stmt->fetchAll() as $row) {
         if ($row['clientStatus'] == 'active') {
-          $rtn .= '<option selected values="'. $row['clientStatus'].'">'.$row['clientStatus'] .'</option>';
+          $rtn .= '<option selected value="active">Active</option>';
+          $rtn .= '<option value="not active">Not Active</option>';
         } else {
-          
+          $rtn .= '<option value="active">Active</option>';
+          $rtn .= '<option selected value="not active">Not Active</option>';
         }
-        
+        $_SESSION['stat']=$row['clientStatus'];
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -278,6 +280,34 @@ function loadClientStatus($rec)
     trigger_error($e->getMessage(), E_USER_NOTICE);
   }
   return $rtn;
+}
+
+function disableClient()
+{
+  $rtn = '';
+  try {
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+      $sql = "UPDATE clients SET clientStatus=:clnStatus WHERE clientID=:recID";
+
+      $stmt = $con->prepare($sql);
+      $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
+      $stmt->bindparam(":clnStatus", $_REQUEST['clientStatus'], PDO::PARAM_STR);
+      $row = $stmt->execute();
+
+      if ($row) {
+        $rtn = "The Client <b>" . $_REQUEST['clientName']. "</b> has been updated";
+      }
+    } else {
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (PDOException $e) {
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+
+  return ($rtn == '') ? 'No client data to updated' : $rtn;
 }
 
 
@@ -360,13 +390,13 @@ function buildDisableForm($id)
     $rtn .= '<div class="col-sm-4"><div class="form-group">';
     $rtn .= '<input type="hidden" name="clientCreatedDate" id="clientCreatedDate" value="'.$dat.'">';
     $rtn .= '<input type="hidden" name="clientID" id="clientID" value="'.$rID.'">';
-    $rtn .= '<select class="form-control" id="clientStatus" name="clientStatus" required>';
-    $rtn .= loadClientStatus($rID). '</select>';
-    $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Client</button></div></div><div>';    
+    $rtn .= '<label for="clientStatus">Client Status</label><select class="form-control" id="clientStatus" name="clientStatus" required>';
+    $rtn .= loadClientStatus($rID). '</select></div>';
+    $rtn .= '<div class="form-group"><button type="submit" id="deleteRec" name="deleteRec" class="btn btn-success float-right">Update Client</button></div></div><div>';    
   }
 
   // die('the value is '.$rtn);
-  $_SESSION['oldRec'] = $cln;
+  $_SESSION['oldRec'] = $_SESSION['stat'];
   return $rtn;
 }
 
@@ -414,8 +444,23 @@ function canSaveEdit()
   $cse['clientDetails'] = $_REQUEST['clientDetails'];
   $cse['clientWhatsAppNum'] = $_REQUEST['clientWhatsAppNum'];
   $cse['clientCreatedDate'] = $_REQUEST['clientCreatedDate'];
+  
 
   if (count(array_diff($oldRec, $cse)) >= 1) {
+    $rtn = true;
+  } else {
+    $_SESSION['clnErr'] = 'No new data to update!';
+    $rtn = false;
+  }
+  return $rtn;
+}
+
+function canDisable()
+{
+  $rtn = false;
+  $oldRec = $_SESSION['oldRec'];  
+
+  if ($oldRec != $_REQUEST['clientStatus']) {
     $rtn = true;
   } else {
     $_SESSION['clnErr'] = 'No new data to update!';

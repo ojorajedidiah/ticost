@@ -249,7 +249,7 @@ function getSpecificDeal($rec)
 
 function getClients()
 {
-  $rtn = '';
+  $rtn = '<option value="0">None Selected</option>';
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
@@ -314,21 +314,21 @@ function buildNewForm()
   $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
   $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients().'</select>';
   $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
-  $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate">';
-  $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>';
-  $rtn .= '<input type="date" class="form-control" name="dealDueDate" id="dealDueDate"></div></div>';
+  $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="javascript:updateDueDate();" value="'.getToday().'">';
+  $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
+  $rtn .= '<input type="date" class="form-control" name="dealDueDate" id="dealDueDate" value="'.getDueDate().'"></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Design Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealDesign" id="dealDesign">';
+  $rtn .= '<input type="text" class="form-control" name="dealDesign" id="dealDesign" required>';
   $rtn .= '<label for="dealSewing">Sewing Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealSewing" id="dealSewing">';
+  $rtn .= '<input type="text" class="form-control" name="dealSewing" id="dealSewing" required>';
   $rtn .= '<label for="dealMaterial">Material Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealMaterial" id="dealMaterial"></div></div>';
+  $rtn .= '<input type="text" class="form-control" name="dealMaterial" id="dealMaterial" required></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealMaterial">Manufacturing Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealMenu" id="dealMenu">';
+  $rtn .= '<input type="text" class="form-control" name="dealMenu" id="dealMenu" required>';
   $rtn .= '<label for="dealAmount">Amount Charged</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealAmount" id="dealAmount">';
+  $rtn .= '<input type="text" class="form-control" name="dealAmount" id="dealAmount" required>';
   $rtn .= '<label for="dealDescription">Deal Description</label>';
   $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" required></textarea></div>';
 
@@ -425,6 +425,13 @@ function canSaveEdit()
 function getToday()
 {
   $dt = new DateTime('now');
+  return $dt->format('Y-m-d');
+}
+
+function getDueDate()
+{
+  $dt = new DateTime('now');
+  $dt->add(new DateInterval('P3W'));
   return $dt->format('Y-m-d');
 }
 
