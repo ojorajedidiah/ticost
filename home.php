@@ -21,11 +21,58 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
 
 </script>
 <script type="text/javascript">
-  function updateDueDate()
-  {
+    function updateDueDate() {
+      var crdate = new Date(document.getElementById("dealCreatedDate").value);
+      crdate.setTime(crdate.getTime() + (21 * (1000 * 60 * 60 * 24)));
+      var ddate=formatDateEntry(crdate);
+      document.getElementById("dealDueDate").value = ddate;
+    }
 
-  }
-</script>
+    function formatDateEntry(dd)
+    {
+      var yr=dd.getFullYear();
+      if ((dd.getMonth()+1) < 10) { var mth='0'+(dd.getMonth()+1); } else { var mth=(dd.getMonth()+1);   }
+      var dy=dd.getUTCDate();
+
+      return yr+'-'+mth+'-'+dy;
+    }
+
+    function updateMargin() {
+      var dgn = formatNumber(document.getElementById("dealDesign").value);
+      var swg = formatNumber(document.getElementById("dealSewing").value);
+      var mtl = formatNumber(document.getElementById("dealMaterial").value);
+      var mnu = formatNumber(document.getElementById("dealManu").value);
+      var amt = formatNumber(document.getElementById("dealAmount").value);
+
+      var cod = parseFloat(dgn + swg + mtl + mnu);
+      var mgn = amt - cod;
+      document.getElementById("profit").innerHTML = 'Estimated Margin is '+NairaFormat.format(mgn);
+      document.getElementById("dealAmount").value=NairaFormat.format(amt);
+      return true;
+    }
+
+    function formatCurrency(nm) {
+      var val = document.getElementById(nm).value;
+      tmp = (isNaN(val)) ? 0.00 : val;
+      document.getElementById(nm).value = NairaFormat.format(tmp);
+      return true;
+    }
+
+    let NairaFormat = new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: '2'
+    });
+
+    function formatNumber(num) {
+      if (num.includes(",")) {
+        var tp = num.replace(/,/g, "");
+      } else {
+        var tp = num;
+      }
+      tmp = (isNaN(tp) || tp.length === 0) ? 0.00 : tp;
+      return parseFloat(tmp);
+    }
+  </script>
 
 
   <body class="hold-transition layout-top-nav">
@@ -112,7 +159,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
       </footer>
     </div>
 
-  <?php } else {
+<?php } else {
   die('<head><script LANGUAGE="JavaScript">window.location="index.php";</script></head>');
 } ?>
 

@@ -4,7 +4,7 @@ $_SESSION['msgErr'] = '';
 $errMsg = '';
 if (isset($_REQUEST['saveRec'])) {
   // if (canSave()) {
-    $errMsg = createNewMsg();
+    $errMsg = createNewDeal();
     $_REQUEST['v'] = "update";
   // } else {
   //   $errMsg = $_SESSION['msgErr'];
@@ -117,25 +117,39 @@ if (isset($_POST['deleteRec'])) {
 ///------------- General DML functions --------------
 ///--------------------------------------------------
 
-function createNewMsg()
+function createNewDeal()
 {
   $rtn = '';
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
+      $cdate=date("Y-m-d", strtotime($_REQUEST['dealCreatedDate']));
+      $ddate=date("Y-m-d", strtotime($_REQUEST['dealDueDate']));
+      $dld=number_format($_REQUEST['dealDesign'],2);
       
-      $sql = "INSERT INTO deals (msgBody,msgCategory,msgSpecialDate) VALUES (:msgBd,:msgCat,:msgSD)";
+      $sql = "INSERT INTO deals (clientID,dealDescription,dealCreatedDate,
+        dealDueDate,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount,dealProfit) 
+        VALUES (:dlClient,:dlDesc,:dlCreatDate,:dlDueDate,:dlDesign,:dlSewing,:dlMaterial,:dlManu,
+        :dlCOD,:dlAmount,:dlProfit)";
 
-      $stmt = $con->prepare($sql);
-      $stmt->bindparam(":msgBd", $_REQUEST['msgBody'], PDO::PARAM_STR);
-      $stmt->bindparam(":msgCat", $_REQUEST['msgCategory'], PDO::PARAM_STR);
-      $stmt->bindparam(":msgSD", $_REQUEST['msgSpecialDate'], PDO::PARAM_STR);     
+      $stmt = $con->prepare($sql);//date("Y-m-d", strtotime($_REQUEST['clientCreatedDate']))
+      $stmt->bindparam(":dlClient", $_REQUEST['clientID'], PDO::PARAM_INT);
+      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlCreatDate", $cdate, PDO::PARAM_STR);
+      $stmt->bindparam(":dlDueDate", $ddate, PDO::PARAM_STR);
+      $stmt->bindparam(":dlDesign", $dld, PDO::PARAM_STR);
+      $stmt->bindparam(":dlSewing", $_REQUEST['dealSewing'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlMaterial", $_REQUEST['dealMaterial'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlManu", $_REQUEST['dealManu'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlCOD", $_REQUEST['dealCOD'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlAmount", $_REQUEST['dealAmount'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlProfit", $_REQUEST['dealProfit'], PDO::PARAM_STR);
       
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The Message Template <b>[" . substr($_REQUEST['msgBody'],0,25) . "...]</b> has been created!";
+        $rtn = "The Deal <b>[" . substr($_REQUEST['dealDescription'],0,15) . "...]</b> has been created!";
         //trigger_error($msg, E_USER_NOTICE);
       }
     } else {
@@ -146,7 +160,7 @@ function createNewMsg()
     trigger_error($e->getMessage(), E_USER_NOTICE);
   }
 
-  return ($rtn == '') ? 'No Message Data' : $rtn;
+  return ($rtn == '') ? 'No Deal Data' : $rtn;
 }
 
 function UpdateMsg()
@@ -314,25 +328,25 @@ function buildNewForm()
   $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
   $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients().'</select>';
   $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
-  $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="javascript:updateDueDate();" value="'.getToday().'">';
+  $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="updateDueDate();" value="'.getToday().'">';
   $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
   $rtn .= '<input type="date" class="form-control" name="dealDueDate" id="dealDueDate" value="'.getDueDate().'"></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Design Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealDesign" id="dealDesign" required>';
+  $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealDesign" id="dealDesign" required onchange="formatCurrency(\'dealDesign\');">';
   $rtn .= '<label for="dealSewing">Sewing Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealSewing" id="dealSewing" required>';
+  $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealSewing" id="dealSewing" required onchange="formatCurrency(\'dealSewing\');">';
   $rtn .= '<label for="dealMaterial">Material Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealMaterial" id="dealMaterial" required></div></div>';
+  $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealMaterial" id="dealMaterial" required onchange="formatCurrency(\'dealMaterial\');"></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealMaterial">Manufacturing Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealMenu" id="dealMenu" required>';
+  $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealManu" id="dealManu" required onchange="formatCurrency(\'dealManu\');">';
   $rtn .= '<label for="dealAmount">Amount Charged</label>';
-  $rtn .= '<input type="text" class="form-control" name="dealAmount" id="dealAmount" required>';
+  $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealAmount" id="dealAmount" required onchange="updateMargin();">';
   $rtn .= '<label for="dealDescription">Deal Description</label>';
-  $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" required></textarea></div>';
+  $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" required></textarea></div></div>';
 
-  $rtn .= '<div class="form-group"><div id="profit" class="float-left"></div>';
+  $rtn .= '<div class="col-sm-12"><div class="form-group"><div id="profit" name="profit" class="float-left" style="font-weight:bold;color:red;"></div>';
   $rtn .= '<button type="submit" id="saveRec" name="saveRec" class="btn btn-success float-right">Create Deal</button></div></div></div>';
 
   return $rtn;
