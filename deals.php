@@ -3,6 +3,7 @@
 $_SESSION['msgErr'] = '';
 $errMsg = '';
 if (isset($_REQUEST['saveRec'])) {
+  // var_dump($_REQUEST);
   // if (canSave()) {
     $errMsg = createNewDeal();
     $_REQUEST['v'] = "update";
@@ -14,7 +15,7 @@ if (isset($_REQUEST['saveRec'])) {
 
 if (isset($_POST['updateRec'])) {
   if (canSaveEdit()) {
-    $errMsg = UpdateMsg();
+    $errMsg = UpdateDeal();
     $_REQUEST['v'] = "update";
   } else {
     $errMsg = $_SESSION['msgErr'];
@@ -126,7 +127,13 @@ function createNewDeal()
       $con = $db->connect();
       $cdate=date("Y-m-d", strtotime($_REQUEST['dealCreatedDate']));
       $ddate=date("Y-m-d", strtotime($_REQUEST['dealDueDate']));
-      $dld=number_format($_REQUEST['dealDesign'],2);
+      $dldgn=convertNumber($_REQUEST['dealDesign']);
+      $dlsew=convertNumber($_REQUEST['dealSewing']);
+      $dlmat=convertNumber($_REQUEST['dealMaterial']);
+      $dlmnu=convertNumber($_REQUEST['dealManu']);
+      $dlcod=getCOD();
+      $dlamo=convertNumber($_REQUEST['dealAmount']);
+      $dlpro=getProfit($_REQUEST['dealAmount']);
       
       $sql = "INSERT INTO deals (clientID,dealDescription,dealCreatedDate,
         dealDueDate,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount,dealProfit) 
@@ -138,13 +145,13 @@ function createNewDeal()
       $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
       $stmt->bindparam(":dlCreatDate", $cdate, PDO::PARAM_STR);
       $stmt->bindparam(":dlDueDate", $ddate, PDO::PARAM_STR);
-      $stmt->bindparam(":dlDesign", $dld, PDO::PARAM_STR);
-      $stmt->bindparam(":dlSewing", $_REQUEST['dealSewing'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlMaterial", $_REQUEST['dealMaterial'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlManu", $_REQUEST['dealManu'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlCOD", $_REQUEST['dealCOD'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlAmount", $_REQUEST['dealAmount'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlProfit", $_REQUEST['dealProfit'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlDesign", $dldgn, PDO::PARAM_STR);
+      $stmt->bindparam(":dlSewing", $dlsew, PDO::PARAM_STR);
+      $stmt->bindparam(":dlMaterial", $dlmat, PDO::PARAM_STR);
+      $stmt->bindparam(":dlManu", $dlmnu, PDO::PARAM_STR);
+      $stmt->bindparam(":dlCOD", $dlcod, PDO::PARAM_STR);
+      $stmt->bindparam(":dlAmount", $dlamo, PDO::PARAM_STR);
+      $stmt->bindparam(":dlProfit", $dlpro, PDO::PARAM_STR);
       
       $row = $stmt->execute();
 
@@ -163,7 +170,7 @@ function createNewDeal()
   return ($rtn == '') ? 'No Deal Data' : $rtn;
 }
 
-function UpdateMsg()
+function UpdateDeal()
 {
   $rtn = '';
   try {
@@ -242,7 +249,9 @@ function getSpecificDeal($rec)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT msgID,msgBody,msgCategory,msgSpecialDate FROM deals WHERE msgID = :id";
+      $sql = "SELECT dealID,clientName,dealCreatedDate,dealDueDate,dealCOD,dealProfit,
+        dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount,dealStatus
+        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -261,7 +270,7 @@ function getSpecificDeal($rec)
   return $rtn;
 }
 
-function getClients()
+function getClients($cl='')
 {
   $rtn = '<option value="0">None Selected</option>';
   try {
@@ -275,10 +284,14 @@ function getClients()
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
 
       foreach ($stmt->fetchAll() as $row) {
-        $d1=$row['clientName'];
+        $d1 = $row['clientName'];
         $rID = $row['clientID'];
-        
-        $rtn .= '<option value="'.$rID.'">' . $d1 . '</option>';
+
+        if (isset($cl) && $cl == $d1) {
+          $rtn .= '<option selected value="' . $rID . '">' . $d1 . '</option>';
+        } else {
+          $rtn .= '<option value="' . $rID . '">' . $d1 . '</option>';
+        }
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -296,30 +309,41 @@ function getClients()
 ///--------------------------------------------------
 function buildEditForm($id)
 {
-  $rtn = '';
-  $msg = array();
-  $msg = getSpecificDeal($id);
-  if (is_array($msg) && count($msg) >= 1) {
-    $dat=new DateTime($msg['msgSpecialDate']);
-    $rtn = '<div class="row"><div class="col-sm-6"><label for="msgCategory">Message Category</label><div class="form-group">';
-    $rtn .= '<select class="form-control" id="msgCategory" name="msgCategory" required>';
-    $rtn.=($msg['msgCategory'] == "send")? '<option value="send" selected>Ready to Send</option>': '<option value="send">Ready to Send</option>';
-    $rtn.=($msg['msgCategory'] == "do not send")? '<option value="do not send" selected>Not Ready to be Sent</option>': '<option value="do not send">Not Ready to be Sent</option>';
-    $rtn.=($msg['msgCategory'] == "already sent")? '<option value="already sent" selected>Already Sent</option>': '<option value="already sent">Already Sent</option>';
-    $rtn .= '</select></div>';
+  $deal = getSpecificDeal($id);
+  if (is_array($deal) && count($deal) >= 1) {
+    $cdat=new DateTime($deal['dealCreatedDate']);
+    $ddat=new DateTime($deal['dealDueDate']);
 
-    $rtn .= '<div class="form-group"><div class="form-group"><label for="msgScheduleDate">Scheduled SMS Date</label>';
-    $rtn .= '<input type="date" class="form-control" name="msgScheduleDate" id="msgScheduleDate" value="'.$dat->format('D d F, Y').'"></div></div></div>';
+    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
+    $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients().'</select>';
+    $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
+    $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="updateDueDate();" value="'.$deal['dealCreatedDate'].'">';
+    $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
+    $rtn .= '<input type="date" class="form-control" name="dealDueDate" id="dealDueDate" value="'.$deal['dealDueDate'].'"></div></div>';
 
-    $rtn .= '<div class="col-sm-6"><div class="form-group"><label for="msgBody">SMS Template</label>';
-    $rtn .= '<textarea class="form-control" rows="6" name="msgBody" id="msgBody" spellcheck="true" required>'.$msg['msgBody'].'</textarea></div>';
+    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Design Cost</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealDesign" id="dealDesign" 
+      required onchange="formatCurrency(\'dealDesign\');" value="'.number_format($deal['dealDesign'],2).'">';
+    $rtn .= '<label for="dealSewing">Sewing Cost</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealSewing" id="dealSewing" 
+      required onchange="formatCurrency(\'dealSewing\');" value="'.number_format($deal['dealSewing'],2).'">';
+    $rtn .= '<label for="dealMaterial">Material Cost</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealMaterial" id="dealMaterial"  
+      required onchange="formatCurrency(\'dealMaterial\');" value="'.number_format($deal['dealMaterial'],2).'"></div></div>';
 
-    $rtn .= '<div class="form-group"><div id="count" class="float-left"><span id="current">0</span><span id="maximum">/120</span></div>';
-    $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Message</button></div></div></div>';
+    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealMaterial">Manufacturing Cost</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealManu" id="dealManu" 
+      required onchange="formatCurrency(\'dealManu\');" value="'.number_format($deal['dealManu'],2).'">';
+    $rtn .= '<label for="dealAmount">Amount Charged</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealAmount" id="dealAmount" 
+      required onchange="updateMargin();" value="'.number_format($deal['dealAmount'],2).'">';
+    $rtn .= '<label for="dealDescription">Deal Description</label>';
+    $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" 
+      required>'.$deal['dealDescription'].'</textarea></div></div>';
+
+    $rtn .= '<div class="col-sm-12"><div class="form-group"><div id="profit" name="profit" class="float-left" style="font-weight:bold;color:red;"></div>';
+    $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Deal</button></div></div></div>';
   }
-
-  // die('the value is '.$rtn);
-  $_SESSION['oldRec'] = $msg;
   return $rtn;
 }
 
@@ -449,4 +473,19 @@ function getDueDate()
   return $dt->format('Y-m-d');
 }
 
+function convertNumber($num)
+{
+  return floatval(str_replace(',','',$num));
+}
+
+function getCOD()
+{
+  return floatval(convertNumber($_REQUEST['dealDesign'])+convertNumber($_REQUEST['dealSewing'])
+    +convertNumber($_REQUEST['dealMaterial'])+convertNumber($_REQUEST['dealManu']));
+}
+
+function getProfit($amt)
+{
+  return floatval(convertNumber($amt)-getCOD());
+}
 ?>
