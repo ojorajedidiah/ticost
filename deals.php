@@ -1,16 +1,11 @@
 <?php
 //session_start();
-$_SESSION['msgErr'] = '';
+$_SESSION['msgDeal'] = '';
 $errMsg = '';
+// var_dump($_REQUEST);
 if (isset($_REQUEST['saveRec'])) {
-  // var_dump($_REQUEST);
-  // if (canSave()) {
-    $errMsg = createNewDeal();
-    $_REQUEST['v'] = "update";
-  // } else {
-  //   $errMsg = $_SESSION['msgErr'];
-  //   $_REQUEST['v'] = "new";
-  // }
+  $errMsg = createNewDeal();
+  $_REQUEST['v'] = "update";
 }
 
 if (isset($_POST['updateRec'])) {
@@ -18,19 +13,19 @@ if (isset($_POST['updateRec'])) {
     $errMsg = UpdateDeal();
     $_REQUEST['v'] = "update";
   } else {
-    $errMsg = $_SESSION['msgErr'];
+    $errMsg = $_SESSION['msgDeal'];
     $_REQUEST['v'] = "edit";
   }
 }
 
 if (isset($_POST['deleteRec'])) {
-  // if (canSaveEdit()) {
-  //   $errMsg = UpdateMsg();
-  //   $_REQUEST['v'] = "update";
-  // }else {
-  //   $errMsg=$_SESSION['msgErr'];
-  //   $_REQUEST['v'] = "edit";
-  // }  
+  $errMsg = disableDeal();
+  $_REQUEST['v'] = "update";
+}
+
+if (isset($_POST['statusRec'])) {
+  $errMsg = updateStatus();
+  $_REQUEST['v'] = "update";
 }
 ?>
 
@@ -41,16 +36,17 @@ if (isset($_POST['deleteRec'])) {
       <div class="card-header">
         <div class="row">
           <div class="col-sm-8">
-            <h5>Client Deals</h5>
+            <h5>Client Deals (WIPs)</h5>
             <?php if ($errMsg != '') {
               echo '<span style="color:red;font-size:15px;">' . $errMsg . '</span>';
             } ?>
           </div>
           <div class="col-sm-4">
-            <?php if (isset($_REQUEST['v']) && ($_REQUEST['v'] == 'new' || $_REQUEST['v'] == 'edit' || $_REQUEST['v'] == 'disable')) { ?>
+            <!--0//&& ($_REQUEST['v'] == 'new' || $_REQUEST['v'] == 'edit' || $_REQUEST['v'] == 'disable' || $_REQUEST['v'] == 'status')-->
+            <?php if (isset($_REQUEST['v'])) { ?>
               <a href="home.php?p=deals" class="btn btn-danger float-right">Back</a>
             <?php } else { ?>
-              <a href="home.php?p=deals&v=new" class="btn btn-secondary float-right">Create New Deal</a>
+              <a href="home.php?p=deals&v=new" class="btn btn-info float-right">Create New Deal</a>
             <?php } ?>
           </div>
         </div>
@@ -66,11 +62,15 @@ if (isset($_POST['deleteRec'])) {
             </form>
           </div>
         </div>
-      <?php } else if (isset($_REQUEST['v']) && $_REQUEST['v'] == 'disable') { ?>
+      <?php } else if (isset($_REQUEST['v']) && ($_REQUEST['v'] == 'disable' || $_REQUEST['v'] == 'status')) { ?>
         <div class="row">
           <div class="card-body card-success">
             <div class="card-header">
-              <h3 class="card-title">Disable Deal</h3>
+              <?php if ($_REQUEST['v'] == 'disable') { ?>
+                <h3 class="card-title">Disable Deal</h3>
+              <?php } else { ?>
+                <h3 class="card-title">Update Deal Status</h3>
+              <?php } ?>
             </div>
             <form method="post" target="">
               <?php echo buildDisableForm($_REQUEST['rid']) ?>
@@ -170,24 +170,24 @@ function createNewDeal()
   return ($rtn == '') ? 'No Deal Data' : $rtn;
 }
 
-function UpdateDeal()
+function disableDeal()
 {
   $rtn = '';
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
-      $sql = "UPDATE deals SET msgBody= :msgB, msgCategory=:msgC, msgSpecialDate=:msgSD WHERE msgID=:recID";
+
+      $sql = "UPDATE deals SET dealDescription=:dlDesc,dealStatus='deleted' WHERE dealID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
-      $stmt->bindparam(":msgB", $_REQUEST['msgBody'], PDO::PARAM_STR);
-      $stmt->bindparam(":msgC", $_REQUEST['msgCategory'], PDO::PARAM_STR);
-      $stmt->bindparam(":msgSD", $_REQUEST['msgSpecialDate'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
+      // $stmt->bindparam(":dlStatus", $_REQUEST['dealStatus'], PDO::PARAM_STR);
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The SMS Message <b>[" . substr($_REQUEST['msgBody'],0,25). "...]</b> has been updated";
+        $rtn = "The deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been deleted";
         //trigger_error($msg, E_USER_NOTICE);
       }
     } else {
@@ -198,7 +198,90 @@ function UpdateDeal()
     trigger_error($e->getMessage(), E_USER_NOTICE);
   }
 
-  return ($rtn == '') ? 'No Message Data' : $rtn;
+  return ($rtn == '') ? 'No Deal Data' : $rtn;
+}
+
+function updateStatus()
+{
+  $rtn = '';
+  try {
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+
+      $sql = "UPDATE deals SET dealDescription=:dlDesc,dealStatus=:dlStatus WHERE dealID=:recID";
+
+      $stmt = $con->prepare($sql);
+      $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
+      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlStatus", $_REQUEST['dealStatus'], PDO::PARAM_STR);
+      $row = $stmt->execute();
+
+      if ($row) {
+        $rtn = "The status of the deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been updated";
+      }
+    } else {
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (PDOException $e) {
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+
+  return ($rtn == '') ? 'No Deal Data' : $rtn;
+}
+
+function UpdateDeal()
+{
+  $rtn = '';
+  try {
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+
+      $cdate=date("Y-m-d", strtotime($_REQUEST['dealCreatedDate']));
+      $ddate=date("Y-m-d", strtotime($_REQUEST['dealDueDate']));
+      $dldgn=convertNumber($_REQUEST['dealDesign']);
+      $dlsew=convertNumber($_REQUEST['dealSewing']);
+      $dlmat=convertNumber($_REQUEST['dealMaterial']);
+      $dlmnu=convertNumber($_REQUEST['dealManu']);
+      $dlcod=getCOD();
+      $dlamo=convertNumber($_REQUEST['dealAmount']);
+      $dlpro=getProfit($_REQUEST['dealAmount']);
+
+      $sql = "UPDATE deals SET clientID=:dlClient,dealDescription=:dlDesc,dealCreatedDate=:dlCreatDate,
+        dealDueDate=:dlDueDate,dealDesign=:dlDesign,dealSewing=:dlSewing,dealMaterial=:dlMaterial,dealManu=:dlManu,
+        dealCOD=:dlCOD,dealAmount=:dlAmount,dealProfit=:dlProfit 
+        WHERE dealID=:recID";
+
+      $stmt = $con->prepare($sql);
+      $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
+      $stmt->bindparam(":dlClient", $_REQUEST['clientID'], PDO::PARAM_INT);
+      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
+      $stmt->bindparam(":dlCreatDate", $cdate, PDO::PARAM_STR);
+      $stmt->bindparam(":dlDueDate", $ddate, PDO::PARAM_STR);
+      $stmt->bindparam(":dlDesign", $dldgn, PDO::PARAM_STR);
+      $stmt->bindparam(":dlSewing", $dlsew, PDO::PARAM_STR);
+      $stmt->bindparam(":dlMaterial", $dlmat, PDO::PARAM_STR);
+      $stmt->bindparam(":dlManu", $dlmnu, PDO::PARAM_STR);
+      $stmt->bindparam(":dlCOD", $dlcod, PDO::PARAM_STR);
+      $stmt->bindparam(":dlAmount", $dlamo, PDO::PARAM_STR);
+      $stmt->bindparam(":dlProfit", $dlpro, PDO::PARAM_STR);
+      $row = $stmt->execute();
+
+      if ($row) {
+        $rtn = "The deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been updated";
+        //trigger_error($msg, E_USER_NOTICE);
+      }
+    } else {
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (PDOException $e) {
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+
+  return ($rtn == '') ? 'No Deal Data' : $rtn;
 }
 
 function getDealRecords()
@@ -211,6 +294,7 @@ function getDealRecords()
 
       $sql = "SELECT dealID,clientName,dealCreatedDate,dealDueDate,dealCOD,dealProfit 
         FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID 
+        WHERE dealStatus NOT IN ('deleted','completed','notified')
         ORDER BY dealID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
@@ -225,11 +309,13 @@ function getDealRecords()
         $rID = $row['dealID'];
         
         $rtn .= '<tr><td>' . $d1 . '</td><td>' . $d2 . '</td>'
-          . '<td>' . $d3 . '</td><td>N ' . $d4 . '</td><td>N ' . $d5 . '</td>'
-          . '<td><span class="badge badge-complete"><a href="home.php?p=deals&v=disable&rid=' . $rID . '">'
-          . '<i class="nav-icon fas fa-user-lock" title="Disable Message" style="color:red;"></i>'
-          . '</a></span><span class="badge badge-edit"><a href="home.php?p=deals&v=edit&rid=' . $rID . '">'
-          . '<i class="nav-icon fas fa-edit" title="Edit Message" style="color:blue;"></i></a></span></td></tr>';
+          . '<td>' . $d3 . '</td><td>&#8358; ' . $d4 . '</td><td>&#8358; ' . $d5 . '</td>'
+          . '<td style="text-align:center;"><span class="badge"><a href="home.php?p=deals&v=disable&rid=' . $rID . '">'
+          . '<i class="nav-icon fas fa-user-lock" title="Delete Deal" style="color:red;"></i>'
+          . '</a></span><span class="badge"><a href="home.php?p=deals&v=edit&rid=' . $rID . '">'
+          . '<i class="nav-icon fas fa-edit" title="Update Deal" style="color:blue;"></i></a></span>'
+          . '<span class="badge"><a href="home.php?p=deals&v=status&rid=' . $rID . '">'
+          . '<i class="nav-icon fas fa-window-restore" title="Status Update" style="color:green;"></i></a></span></td></tr>';
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -249,8 +335,8 @@ function getSpecificDeal($rec)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT dealID,clientName,dealCreatedDate,dealDueDate,dealCOD,dealProfit,
-        dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount,dealStatus
+      $sql = "SELECT dealID,c.clientID,dealCreatedDate,dealDueDate,
+        dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount
         FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
@@ -270,7 +356,7 @@ function getSpecificDeal($rec)
   return $rtn;
 }
 
-function getClients($cl='')
+function getClients($cl=0)
 {
   $rtn = '<option value="0">None Selected</option>';
   try {
@@ -287,7 +373,7 @@ function getClients($cl='')
         $d1 = $row['clientName'];
         $rID = $row['clientID'];
 
-        if (isset($cl) && $cl == $d1) {
+        if (isset($cl) && $cl == $rID) {
           $rtn .= '<option selected value="' . $rID . '">' . $d1 . '</option>';
         } else {
           $rtn .= '<option value="' . $rID . '">' . $d1 . '</option>';
@@ -303,6 +389,42 @@ function getClients($cl='')
   return ($rtn == '') ? '<option value="0">Empty Client List</option>' : $rtn;
 }
 
+function getDealStatus($did=0)
+{
+  $rtn = '';
+  $arr=array('created','agreed','active','completed');
+  try {
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+
+      $sql = "SELECT dealStatus FROM deals WHERE dealID=:id";
+      $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
+
+      $stmt->bindparam(":id", $did, PDO::PARAM_INT);      
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      $stmt->execute();
+
+      $row=$stmt->fetch();
+      $d1 = $row['dealStatus'];
+
+      for ($cnt=0; $cnt<count($arr);$cnt++) {
+        if (isset($did) && $arr[$cnt] == $d1) {
+          $rtn .= '<option selected value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
+        } else {
+          $rtn .= '<option value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
+        }
+      }
+    } else {
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (Exception $e) {
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+  return ($rtn == '') ? '<option value="0">Empty Status List</option>' : $rtn;
+}
+
 
 ///--------------------------------------------------
 ///-------------- Build Form functions --------------
@@ -315,7 +437,7 @@ function buildEditForm($id)
     $ddat=new DateTime($deal['dealDueDate']);
 
     $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
-    $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients().'</select>';
+    $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients($id).'</select>';
     $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
     $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="updateDueDate();" value="'.$deal['dealCreatedDate'].'">';
     $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
@@ -343,7 +465,9 @@ function buildEditForm($id)
 
     $rtn .= '<div class="col-sm-12"><div class="form-group"><div id="profit" name="profit" class="float-left" style="font-weight:bold;color:red;"></div>';
     $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Deal</button></div></div></div>';
+    $_SESSION['oldRec'] = $deal;
   }
+  
   return $rtn;
 }
 
@@ -379,29 +503,42 @@ function buildNewForm()
 function buildDisableForm($id)
 {
   $rtn = '';
-  $gst = array();
-  $msg = getSpecificDeal($id);
+  $deal = array();
+  $deal = getSpecificDeal($id);
   // die('the value is '.$gst['guestVisitDate']);
-  if (is_array($msg) && count($msg) >= 1) {
-    $rtn = '<div class="row"><div class="col-sm-6"><label for="msgCategory">Message Category</label><div class="form-group">';
-    $rtn .= '<select class="form-control" id="msgCategory" name="msgCategory" readonly>';
-    $rtn.=($msg['msgCategory'] == "send")? '<option value="send" selected>Ready to Send</option>': '<option value="send">Ready to Send</option>';
-    $rtn.=($msg['msgCategory'] == "do not send")? '<option value="do not send" selected>Not Ready to be Sent</option>': '<option value="do not send">Not Ready to be Sent</option>';
-    $rtn .= '</select></div>';
+  if (is_array($deal) && count($deal) >= 1) {
+    $cdat=new DateTime($deal['dealCreatedDate']);
+    $ddat=new DateTime($deal['dealDueDate']);
 
-    $rtn .= '<div class="form-group"><div class="form-group"><label for="msgSpecialDate">Scheduled SMS Date</label>';
-    $rtn .= '<input type="date" readonly class="form-control" name="msgSpecialDate" id="msgSpecialDate" value="'.$msg['msgSpecialDate'].'"></div></div></div>';
+    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
+    $rtn .= '<select class="form-control" id="clientID" name="clientID" disabled>'.getClients($id).'</select>';
+    $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
+    $rtn .= '<input type="date" class="form-control" readonly value="'.$deal['dealCreatedDate'].'">';
+    $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
+    $rtn .= '<input type="date" class="form-control" name="dealDueDate" readonly id="dealDueDate" value="'.$deal['dealDueDate'].'"></div></div>';
 
-    $rtn .= '<div class="col-sm-6"><div class="form-group"><label for="msgBody">SMS Template</label>';
-    $rtn .= '<textarea class="form-control" rows="6" name="msgBody" id="msgBody" spellcheck="true" readonly>'.$msg['msgBody'].'</textarea></div>';
+    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Total Cost of Design</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" readonly value="'.number_format($deal['dealCOD'],2).'">';
+    $rtn .= '<label for="dealAmount">Amount Charged</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right;" readonly value="'.number_format($deal['dealAmount'],2).'">';
+    $rtn .= '<label for="dealMaterial">Profit/Margin</label>';
+    $rtn .= '<input type="text" class="form-control" style="text-align:right; font-weight:bold" 
+      readonly value="'.number_format(($deal['dealAmount']-$deal['dealCOD']),2).'"></div></div>';
 
-    $rtn .= '<div class="form-group"><div id="count" class="float-left"><span id="current">0</span><span id="maximum">/120</span></div>';
-    $rtn .= '<button type="submit" id="disableRec" name="disableRec" class="btn btn-success float-right">Disable Message</button></div></div></div>';
-    
+    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDescription">Deal Description</label>';
+    $rtn .= '<textarea class="form-control" rows="2" name="dealDescription" id="dealDescription" spellcheck="true" required>'.$deal['dealDescription'].'</textarea>';
+    $rtn .= '<label for="dealMaterial">Current Status</label>';
+    if ($_REQUEST['v'] == 'disable') {
+      $rtn .= '<select class="form-control" id="dealStatus" name="dealStatus" disabled>'.getDealStatus($id).'</select></div>';
+      $rtn .= '<div class="form-group"><button type="submit" id="deleteRec" name="deleteRec" class="btn btn-dark float-right">Delete Deal</button></div>';
+    } else {
+      $rtn .= '<select class="form-control" id="dealStatus" name="dealStatus" required>'.getDealStatus($id).'</select></div>';
+      $rtn .= '<div class="form-group"><button type="submit" id="statusRec" name="statusRec" class="btn btn-secondary float-right">Update Status</button></div>';
+    }    
+    $rtn .= '</div></div>';
+    $_SESSION['oldRec'] = $deal;
   }
 
-  // die('the value is '.$rtn);
-  $_SESSION['oldRec'] = $gst;
   return $rtn;
 }
 
@@ -409,52 +546,33 @@ function buildDisableForm($id)
 ///--------------------------------------------------
 ///---------- Data Verification functions -----------
 ///--------------------------------------------------
-function canSave()
-{
-  $rtn = true;
-  try {
-    $msgC = $_REQUEST['msgCategory'];
-    $db = new connectDatabase();
-    if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
-      $sql = "SELECT * FROM deals WHERE msgCategory = '$msgC'";
-      $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
-      $stmt->execute();
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-
-      foreach ($stmt->fetchAll() as $row) {
-        $rtn = false;
-        trigger_error("This Message already exist in the Database!", E_USER_NOTICE);
-      }
-    } else {
-      trigger_error($db->connectionError(), E_USER_NOTICE);
-    }
-    $db->closeConnection();
-  } catch (PDOException $e) {
-    trigger_error($e->getMessage(), E_USER_NOTICE);
-  }
-
-  return $rtn;
-}
-
 function canSaveEdit()
 {
   $rtn = false;
   $cse = array();
   $oldRec = $_SESSION['oldRec'];
 
-  $cse['msgBody'] = $_REQUEST['msgBody'];
-  $cse['msgScheduleDate'] = $_REQUEST['msgScheduleDate'];
-  $cse['msgCategory'] = $_REQUEST['msgCategory'];
+  $cse['dealID'] = (int)$_REQUEST['rid'];
+  $cse['clientID'] = ($_REQUEST['clientID']=="0")?NULL:(int)$_REQUEST['clientID'];
+  $cse['dealCreatedDate'] = $_REQUEST['dealCreatedDate'];
+  $cse['dealDueDate'] = $_REQUEST['dealDueDate'];
+  $cse['dealDescription'] = $_REQUEST['dealDescription'];
+  $cse['dealDesign'] = str_replace(',','',$_REQUEST['dealDesign']);
+  $cse['dealSewing'] = str_replace(',','',$_REQUEST['dealSewing']);
+  $cse['dealMaterial'] = str_replace(',','',$_REQUEST['dealMaterial']);
+  $cse['dealManu'] = str_replace(',','',$_REQUEST['dealManu']);
+  $cse['dealCOD'] = str_replace(',','',number_format(getCOD(),2));
+  $cse['dealAmount'] = str_replace(',','',$_REQUEST['dealAmount']);
 
   if (count(array_diff($oldRec, $cse)) >= 1) {
     $rtn = true;
   } else {
-    $_SESSION['msgErr'] = 'No new data to update!';
+    $_SESSION['msgDeal'] = 'No new data to update!';
     $rtn = false;
   }
   return $rtn;
 }
+
 
 ///--------------------------------------------------
 ///------------ general-purpose functions -----------

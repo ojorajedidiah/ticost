@@ -49,7 +49,7 @@ if (isset($_POST['deleteRec'])) {
             <?php if (isset($_REQUEST['v']) && ($_REQUEST['v'] == 'new' || $_REQUEST['v'] == 'edit' || $_REQUEST['v'] == 'disable')) { ?>
               <a href="home.php?p=clients" class="btn btn-danger float-right">Back</a>
             <?php } else { ?>
-              <a href="home.php?p=clients&v=new" class="btn btn-secondary float-right">Create New</a>
+              <a href="home.php?p=clients&v=new" class="btn btn-info float-right">Create New</a>
             <?php } ?>
           </div>
         </div>
@@ -195,7 +195,8 @@ function getClientRecords()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientWhatsAppNum FROM clients ORDER BY clientID ASC";
+      $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientWhatsAppNum FROM clients 
+        WHERE clientStatus='active' ORDER BY clientID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
