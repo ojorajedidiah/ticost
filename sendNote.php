@@ -10,7 +10,7 @@ if (isset($_POST['updateRec'])) {
     $errMsg = updateDeal();
     $_REQUEST['v'] = "update";
   } else {
-    $errMsg = $_SESSION['msgSMS'];
+    $errMsg = $_SESSION['msgSend'];
     $_REQUEST['v'] = "edit";
   }
   
@@ -32,7 +32,7 @@ if (isset($_POST['updateRec'])) {
           <div class="col-sm-6">
             <?php if (isset($_REQUEST['v']) && $_REQUEST['v'] == 'send') { ?>
               <span style="color:red;font-size:15px;font-weight:bold;"><?php echo sendNote($_REQUEST['rid']); ?></span>
-            <?php } else { ?>
+            <?php } elseif (isset($_REQUEST['v']) && $_REQUEST['v'] == 'edit')  { ?>
               <a href="home.php?p=sendNote" class="btn btn-danger float-right">Back</a>
             <?php } ?>
           </div>
@@ -136,7 +136,7 @@ function getDealRecords()
         $rtn .= '<tr><td>' . $d1 . '</td><td>' . $d2 . '</td>'
           . '<td>' . $d3 . '</td><td>&#8358; ' . $d4 . '</td><td>&#8358; ' . $d5 . '</td>'
           . '<td style="text-align:center;"><span class="badge"><a href="home.php?p=sendNote&v=send&rid=' . $rID . '">'
-          . '<i class="nav-icon fas fa-share-square" title="Send SMS" style="color:green;"></i>'
+          . '<i class="nav-icon fas fa-share-square" title="Send Email" style="color:green;"></i>'
           . '</a></span><span class="badge"><a href="home.php?p=sendNote&v=edit&rid=' . $rID . '">'
           . '<i class="nav-icon fas fa-edit" title="Update Deal" style="color:blue;"></i></a></span>'
           . '</td></tr>';
@@ -249,10 +249,26 @@ function getDealStatus($did=0)
   return ($rtn == '') ? '<option value="0">Empty Status List</option>' : $rtn;
 }
 
-function sendNote()
+function sendNote($id=0)
 {
+  $rtn='SMS sent to sampling SMS';
+  if ($id >= 0){
+    $notf=getRecipient($id);
+    try
+    {
+      $to=$notf['clientEmail'];
+      $subj='Your dress is ready for Pickup/Delivery';
+      $msg=getEmailBody('pickup');
+      $hdrs='From:titilivate@gmail.com';
 
-  return 'SMS sent to sampling SMS';
+      mail($to, $subj, $msg, $hdrs);
+      $rtn="Email sent successfully to ". $notf['clientName'];
+
+    } catch(Exception $e){
+      trigger_error($e->getMessage(), E_USER_NOTICE);
+    }
+  }
+  return $rtn;
 }
 
 function getRecipient($id=0)
@@ -263,14 +279,15 @@ function getRecipient($id=0)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientName,clientWhatsAppNum,clientEmail FROM clients WHERE clientID=:id";
+      $sql = "SELECT clientName,clientWhatsAppNum,clientEmail 
+        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $id, PDO::PARAM_INT);
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
 
       foreach ($stmt->fetchAll() as $row) {
-        $rtn['eleID']=$row['eleID'];
+        $rtn['clientWhatsAppNum']=$row['clientWhatsAppNum'];
         $rtn['clientName']=$row['clientName']; 
         $rtn['clientEmail']=$row['clientEmail'];     
       }
@@ -280,6 +297,21 @@ function getRecipient($id=0)
     $db->closeConnection();
   } catch (Exception $e) {
     trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+  return $rtn;
+}
+
+function getEmailBody($ky='')
+{
+  $rtn='';
+  if ($ky=='pickup'){
+    $rtn='We are excited to inform you that your dress is ready for pickup. 
+    <br><br>We have painstakingly crafted a beautiful piece for you, nitted with lots of love and care. 
+    We were careful in detailing every curves and pieces as defined in your sizing. 
+    <br><br>It will be our pleasure to have your in our office for sizing and any other 
+    top-ups you may required to fine-fune this gorgeous dress.<br><br>See you soon.
+    <br><b>Please reply to this Whatsapp Number: 08085719632</b>
+    <br><br><br>Yours sincerely,<br><b>Titilivate Courture & style</b>';
   }
   return $rtn;
 }
@@ -335,18 +367,9 @@ function canSaveEdit()
   $oldRec = $_SESSION['oldRec'];
 
   $cse['dealID'] = (int)$_REQUEST['rid'];
-  $cse['clientID'] = ($_REQUEST['clientID']=="0")?NULL:(int)$_REQUEST['clientID'];
-  $cse['dealCreatedDate'] = $_REQUEST['dealCreatedDate'];
-  $cse['dealDueDate'] = $_REQUEST['dealDueDate'];
   $cse['dealDescription'] = $_REQUEST['dealDescription'];
-  $cse['dealDesign'] = str_replace(',','',$_REQUEST['dealDesign']);
-  $cse['dealSewing'] = str_replace(',','',$_REQUEST['dealSewing']);
-  $cse['dealMaterial'] = str_replace(',','',$_REQUEST['dealMaterial']);
-  $cse['dealManu'] = str_replace(',','',$_REQUEST['dealManu']);
-  $cse['dealCOD'] = str_replace(',','',number_format(getCOD(),2));
-  $cse['dealAmount'] = str_replace(',','',$_REQUEST['dealAmount']);
 
-  if (count(array_diff($oldRec, $cse)) >= 1) {
+  if ($oldRec['dealDescription'] !== $cse['dealDescription']) {
     $rtn = true;
   } else {
     $_SESSION['msgSend'] = 'No new data to update!';
@@ -373,19 +396,4 @@ function getDueDate()
   return $dt->format('Y-m-d');
 }
 
-function convertNumber($num)
-{
-  return floatval(str_replace(',','',$num));
-}
-
-function getCOD()
-{
-  return floatval(convertNumber($_REQUEST['dealDesign'])+convertNumber($_REQUEST['dealSewing'])
-    +convertNumber($_REQUEST['dealMaterial'])+convertNumber($_REQUEST['dealManu']));
-}
-
-function getProfit($amt)
-{
-  return floatval(convertNumber($amt)-getCOD());
-}
 ?>
