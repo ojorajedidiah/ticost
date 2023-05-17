@@ -410,6 +410,7 @@ function canSave()
   $rtn = true;
   try {
     $clnN = $_REQUEST['clientNumber'];
+    $clnE = $_REQUEST['clientEmail'];
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
@@ -418,10 +419,18 @@ function canSave()
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
 
+      // check if record (phonenumber) already exist
       foreach ($stmt->fetchAll() as $row) {
         $rtn = false;
         trigger_error("This client phone number already exist in the Database!", E_USER_NOTICE);
       }
+
+      // check if the email is a valid email
+      if (!preg_match("/^[a-zA-Z-' ]*$/",$clnE)) {
+        $rtn = false;
+        trigger_error("Only letters and white space allowed in email!", E_USER_NOTICE);
+      }
+
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
     }

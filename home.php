@@ -74,6 +74,17 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
       tmp = (isNaN(tp) || tp.length === 0) ? 0.00 : tp;
       return parseFloat(tmp);
     }
+
+    function checkSendSMS(sta)  {
+      alert("Image is loaded");
+      const myCheckbox = document.getElementById('canSend');
+      if(sta == "checked"){      
+        myCheckbox.checked = true;
+      } else {
+        myCheckbox.checked = false;
+      }
+      //return true;
+    }
   </script>
 
 
@@ -89,8 +100,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
                   <div class="row mb-2">
                     <div class="col-sm-6">
                       <h1 class="m-0" style="font-family: 'Lucy Said Ok', Courier, monospace; font-size:xxx-large;">Titilivate Couture & Style</h1>
-                      <!-- <h3 class="card-title" style="color:cadetblue;"><?php //echo userDetails(); 
-                                                                            ?></h3> -->
+                      <!-- <h3 class="card-title" style="color:cadetblue;"><?php //echo userDetails(); ?></h3> -->
                     </div>
                     <div class="col-sm-6">
                       <ol class="breadcrumb float-sm-right">
@@ -163,8 +173,8 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
     </div>
 
   <?php } else {
-  die('<head><script LANGUAGE="JavaScript">window.location="index.php";</script></head>');
-} ?>
+    die('<head><script LANGUAGE="JavaScript">window.location="index.php";</script></head>');
+  } ?>
 
   <script src="assets/js/jquery.min.js"></script>
   <script src="assets/js/bootstrap.bundle.min.js"></script>
