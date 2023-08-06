@@ -1,7 +1,7 @@
 <nav class="main-header navbar navbar-expand-md navbar-light navbar-white" style="font-weight: bold;background-color: azure;"><!--- #AAFCB8 -->
   <div class="container">
     <a href="home.php" class="navbar-brand">
-      <img src="assets/img/logo-only.gif" alt="TICOST Logo" class="mr-2" style="width: 45px; height: 40px;">
+      <img src="assets/img/logo.png" alt="TICOST Logo" class="mr-2" style="width: 45px; height: 40px;">
       <!-- <span class="brand-text font-weight-light" style="font-family: 'Lucy Said Ok', Courier, monospace; font-size:large;"><b>TICOST</b></span> -->
     </a>
 
