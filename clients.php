@@ -125,7 +125,7 @@ function createNewClient()
       $con = $db->connect();
       $dat=date("Y-m-d");
       
-      $sql = "INSERT INTO clients (clientName,clientNumber,clientEmail,clientDetails,clientWhatsAppNum,clientCreatedDate) 
+      $sql = "INSERT INTO tcs_clients (clientName,clientNumber,clientEmail,clientDetails,clientWhatsAppNum,clientCreatedDate) 
       VALUES (:clnName,:clnNum,:clnEmail,:clnDetails,:clnWANum,:clnCreatedDate)";
 
       $stmt = $con->prepare($sql);
@@ -159,7 +159,7 @@ function updateClient()
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
-      $sql = "UPDATE clients SET clientName=:clnName, clientNumber=:clnNum, clientEmail=:clnEmail, 
+      $sql = "UPDATE tcs_clients SET clientName=:clnName, clientNumber=:clnNum, clientEmail=:clnEmail, 
         clientDetails=:clnDetails, clientWhatsAppNum=:clnWANum 
         WHERE clientID=:recID";
 
@@ -195,7 +195,7 @@ function getClientRecords()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientWhatsAppNum FROM clients 
+      $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientWhatsAppNum FROM tcs_clients 
         WHERE clientStatus='active' ORDER BY clientID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
@@ -230,7 +230,7 @@ function getSpecificClient($rec)
       $con = $db->connect();
 
       $sql = "SELECT clientID,clientName,clientNumber,clientEmail,clientDetails,clientWhatsAppNum,clientCreatedDate 
-        FROM clients WHERE clientID=:id";
+        FROM tcs_clients WHERE clientID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -257,7 +257,7 @@ function loadClientStatus($rec)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientStatus FROM clients WHERE clientID=:id";
+      $sql = "SELECT clientID,clientStatus FROM tcs_clients WHERE clientID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -290,7 +290,7 @@ function disableClient()
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
-      $sql = "UPDATE clients SET clientStatus=:clnStatus WHERE clientID=:recID";
+      $sql = "UPDATE tcs_clients SET clientStatus=:clnStatus WHERE clientID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
@@ -414,7 +414,7 @@ function canSave()
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
-      $sql = "SELECT * FROM clients WHERE clientNumber = '$clnN'";
+      $sql = "SELECT * FROM tcs_clients WHERE clientNumber = '$clnN'";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);

@@ -135,7 +135,7 @@ function createNewDeal()
       $dlamo=convertNumber($_REQUEST['dealAmount']);
       $dlpro=getProfit($_REQUEST['dealAmount']);
       
-      $sql = "INSERT INTO deals (clientID,dealDescription,dealCreatedDate,
+      $sql = "INSERT INTO tcs_deals (clientID,dealDescription,dealCreatedDate,
         dealDueDate,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount,dealProfit) 
         VALUES (:dlClient,:dlDesc,:dlCreatDate,:dlDueDate,:dlDesign,:dlSewing,:dlMaterial,:dlManu,
         :dlCOD,:dlAmount,:dlProfit)";
@@ -178,7 +178,7 @@ function disableDeal()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "UPDATE deals SET dealDescription=:dlDesc,dealStatus='deleted' WHERE dealID=:recID";
+      $sql = "UPDATE tcs_deals SET dealDescription=:dlDesc,dealStatus='deleted' WHERE dealID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
@@ -209,7 +209,7 @@ function updateStatus()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "UPDATE deals SET dealDescription=:dlDesc,dealStatus=:dlStatus WHERE dealID=:recID";
+      $sql = "UPDATE tcs_deals SET dealDescription=:dlDesc,dealStatus=:dlStatus WHERE dealID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
@@ -249,7 +249,7 @@ function UpdateDeal()
       $dlamo=convertNumber($_REQUEST['dealAmount']);
       $dlpro=getProfit($_REQUEST['dealAmount']);
 
-      $sql = "UPDATE deals SET clientID=:dlClient,dealDescription=:dlDesc,dealCreatedDate=:dlCreatDate,
+      $sql = "UPDATE tcs_deals SET clientID=:dlClient,dealDescription=:dlDesc,dealCreatedDate=:dlCreatDate,
         dealDueDate=:dlDueDate,dealDesign=:dlDesign,dealSewing=:dlSewing,dealMaterial=:dlMaterial,dealManu=:dlManu,
         dealCOD=:dlCOD,dealAmount=:dlAmount,dealProfit=:dlProfit 
         WHERE dealID=:recID";
@@ -293,8 +293,8 @@ function getDealRecords()
       $con = $db->connect();
 
       $sql = "SELECT dealID,clientName,dealCreatedDate,dealDueDate,dealCOD,dealProfit 
-        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID 
-        WHERE dealStatus NOT IN ('deleted','completed','notified')
+        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID 
+        WHERE dealStatus NOT IN ('deleted','qc passed','notified')
         ORDER BY dealID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
@@ -337,7 +337,7 @@ function getSpecificDeal($rec)
 
       $sql = "SELECT dealID,c.clientID,dealCreatedDate,dealDueDate,
         dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount
-        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
+        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -364,7 +364,7 @@ function getClients($cl=0)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientName FROM clients WHERE clientStatus='active' ORDER BY clientID ASC";
+      $sql = "SELECT clientID,clientName FROM tcs_clients WHERE clientStatus='active' ORDER BY clientID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -392,13 +392,13 @@ function getClients($cl=0)
 function getDealStatus($did=0)
 {
   $rtn = '';
-  $arr=array('created','agreed','active','completed');
+  $arr=array('created','agreed','active','completed','qc passed');
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT dealStatus FROM deals WHERE dealID=:id";
+      $sql = "SELECT dealStatus FROM tcs_deals WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
 
       $stmt->bindparam(":id", $did, PDO::PARAM_INT);      

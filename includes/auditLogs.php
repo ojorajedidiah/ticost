@@ -39,25 +39,6 @@ if (isset($_REQUEST) && shdSaveLog()) {
 
 
 
-function getIPAddress()
-{
-  $ipadd = '';
-
-  try {
-    //die('testing the login 2');
-    if (isset($_SERVER['HTTP_CLIENT_IP']) && $_SERVER['HTTP_CLIENT_IP'] != '' && $_SERVER['HTTP_CLIENT_IP'] != '127.0.0.1') {
-      $ipadd = $_SERVER['HTTP_CLIENT_IP'];
-    } else if (isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] != '' && $_SERVER['REMOTE_ADDR'] != '127.0.0.1') {
-      $ipadd = $_SERVER['REMOTE_ADDR'];
-    } else if (isset($_SERVER['REMOTE_HOST']) && $_SERVER['REMOTE_HOST'] != '' && $_SERVER['REMOTE_HOST'] != '127.0.0.1') {
-      $ipadd = $_SERVER['REMOTE_HOST'];
-    }
-  } catch (Exception $ex) {
-    die('Error getIPAddress ' . $ex->getMessage());
-  }
-
-  return $ipadd; 
-}
 
 function shdSaveLog()
 {

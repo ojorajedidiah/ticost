@@ -74,17 +74,6 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
       tmp = (isNaN(tp) || tp.length === 0) ? 0.00 : tp;
       return parseFloat(tmp);
     }
-
-    function checkSendSMS(sta)  {
-      alert("Image is loaded");
-      const myCheckbox = document.getElementById('canSend');
-      if(sta == "checked"){      
-        myCheckbox.checked = true;
-      } else {
-        myCheckbox.checked = false;
-      }
-      //return true;
-    }
   </script>
 
 
@@ -296,7 +285,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
       if ($db->isLastQuerySuccessful()) {
         $con = $db->connect();
 
-        $sql = "SELECT COUNT(dealID) as cnt FROM deals WHERE dealStatus!='deleted' AND dealCreatedDate BETWEEN " . getDateRange('M');
+        $sql = "SELECT COUNT(dealID) as cnt FROM tcs_deals WHERE dealStatus!='deleted' AND dealCreatedDate BETWEEN " . getDateRange('M');
         $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
 
         $stmt->execute();

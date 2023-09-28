@@ -31,7 +31,7 @@ if (isset($_POST['updateRec'])) {
           </div>
           <div class="col-sm-6">
             <?php if (isset($_REQUEST['v']) && $_REQUEST['v'] == 'send') { ?>
-              <span style="color:red;font-size:15px;font-weight:bold;"><?php echo sendNote($_REQUEST['rid']); ?></span>
+              <span style="color:red;font-size:15px;font-weight:bold;"><?php echo sendWhatsApp($_REQUEST['rid']); ?></span>
             <?php } elseif (isset($_REQUEST['v']) && $_REQUEST['v'] == 'edit')  { ?>
               <a href="home.php?p=sendNote" class="btn btn-danger float-right">Back</a>
             <?php } ?>
@@ -87,7 +87,7 @@ function updateDeal()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "UPDATE deals SET dealDescription=:dlDesc WHERE dealID=:recID";
+      $sql = "UPDATE tcs_deals SET dealDescription=:dlDesc WHERE dealID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
@@ -119,7 +119,7 @@ function getDealRecords()
       $con = $db->connect();
 
       $sql = "SELECT dealID,clientName,dealCreatedDate,dealDueDate,dealCOD,dealProfit 
-        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealStatus='qc passed'
+        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID WHERE dealStatus='qc passed'
         ORDER BY dealID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
@@ -161,7 +161,7 @@ function getSpecificDeal($rec)
 
       $sql = "SELECT dealID,c.clientID,dealCreatedDate,dealDueDate,
         dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount
-        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
+        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -188,7 +188,7 @@ function getClients($cl=0)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT clientID,clientName FROM clients WHERE clientStatus='active' ORDER BY clientID ASC";
+      $sql = "SELECT clientID,clientName FROM tcs_clients WHERE clientStatus='active' ORDER BY clientID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -222,7 +222,7 @@ function getDealStatus($did=0)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT dealStatus FROM deals WHERE dealID=:id";
+      $sql = "SELECT dealStatus FROM tcs_deals WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
 
       $stmt->bindparam(":id", $did, PDO::PARAM_INT);      
@@ -249,20 +249,21 @@ function getDealStatus($did=0)
   return ($rtn == '') ? '<option value="0">Empty Status List</option>' : $rtn;
 }
 
-function sendNote($id=0)
+function sendWhatsApp($id=0)
 {
   $rtn='SMS sent to sampling SMS';
   if ($id >= 0){
     $notf=getRecipient($id);
     try
     {
-      $to=$notf['clientEmail'];
-      $subj='Your dress is ready for Pickup/Delivery';
-      $msg=getEmailBody('pickup');
+      $to=$notf['clientWhatsAppNum'];
+      // $subj='Your dress is ready for Pickup/Delivery';
+      $msg=getWhatsAppBody('pickup');
       $hdrs='From:titilivate@gmail.com';
 
-      mail($to, $subj, $msg, $hdrs);
+      // mail($to, $subj, $msg, $hdrs);
       $rtn="Email sent successfully to ". $notf['clientName'];
+      //https://wa.me/2348082908001?text=Your%20dress%20in%20is%20ready%20for%20Pickup
 
     } catch(Exception $e){
       trigger_error($e->getMessage(), E_USER_NOTICE);
@@ -280,7 +281,7 @@ function getRecipient($id=0)
       $con = $db->connect();
 
       $sql = "SELECT clientName,clientWhatsAppNum,clientEmail 
-        FROM deals d LEFT JOIN clients c ON d.clientID=c.clientID WHERE dealID=:id";
+        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID WHERE dealID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $id, PDO::PARAM_INT);
       $stmt->execute();
@@ -301,7 +302,7 @@ function getRecipient($id=0)
   return $rtn;
 }
 
-function getEmailBody($ky='')
+function getWhatsAppBody($ky='')
 {
   $rtn='';
   if ($ky=='pickup'){

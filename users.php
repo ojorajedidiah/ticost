@@ -495,7 +495,4 @@ function getToday()
   return $dt->format('Y-m-d');
 }
 
-
-
-
 ?>
