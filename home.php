@@ -18,6 +18,41 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
         // "buttons": ["excel", "pdf", "colvis"]
       }); //.buttons().container().appendTo('#grids_wrapper .col-md-6:eq(0)');
     });
+
+    $(function() {
+          $("#dikins").DataTable({
+            "ajax": 'dikins.txt',
+            "paging": true,
+            "lengthChange": false,
+            "ordering": true,
+            "searching": false,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "columns": [{
+                data: 'cocoName'
+              },
+              {
+                data: 'cocoUnitSize'
+              },
+              {
+                data: 'cocoImage',
+                render: function(data) {
+                  return '<a href="/assets/img/checkmart.jpg">Dikins</a>';
+                }
+              },
+              {
+                data: 'cocoQuantity'
+              },
+              {
+                data: 'cocoDescription'
+              },
+              {
+                data: 'action'
+              },
+            ]
+
+          });
   </script>
   <script type="text/javascript">
     function updateDueDate() {
@@ -89,7 +124,8 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
                   <div class="row mb-2">
                     <div class="col-sm-6">
                       <h1 class="m-0" style="font-family: 'Lucy Said Ok', Courier, monospace; font-size:xxx-large;">Titilivate Couture & Style</h1>
-                      <!-- <h3 class="card-title" style="color:cadetblue;"><?php //echo userDetails(); ?></h3> -->
+                      <!-- <h3 class="card-title" style="color:cadetblue;"><?php //echo userDetails(); 
+                                                                            ?></h3> -->
                     </div>
                     <div class="col-sm-6">
                       <ol class="breadcrumb float-sm-right">
@@ -141,7 +177,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
                             <p style="font-size: smaller;">Total Undelivered Deals (This month)</p>
                           </div>
                           <!-- <div class="icon"><i class="fas fa-user-tie"></i></div> -->
-						            </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -162,8 +198,8 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
     </div>
 
   <?php } else {
-    die('<head><script LANGUAGE="JavaScript">window.location="index.php";</script></head>');
-  } ?>
+  die('<head><script LANGUAGE="JavaScript">window.location="index.php";</script></head>');
+} ?>
 
   <script src="assets/js/jquery.min.js"></script>
   <script src="assets/js/bootstrap.bundle.min.js"></script>

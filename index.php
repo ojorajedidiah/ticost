@@ -127,9 +127,9 @@ if (isset($_REQUEST['login']) && (isset($_REQUEST['vw']) && $_REQUEST['vw'] == '
 <body class="hold-transition login-page"  style="background-color: azure;">
   <div class="login-box">
     <div class="login-logo">
-      <a class="navbar-brand" href=""><img src="assets/img/logo.png" alt="Logo" width="105" height="95" /></a>
+      <a class="navbar-brand" href=""><img src="assets/img/logo.png" alt="Logo" width="165" height="75" /></a>
       <a href="">
-        <h5><b>Titilivate Couture & Style | Log in</b></h5>
+        <h5><b>Staff | Log in</b></h5>
       </a>
     </div>
     <?php if (isset($_SESSION['firstTimer']) && $_SESSION['firstTimer'] == 1) { ?>
