@@ -1,12 +1,28 @@
 <?php 
-$_SESSION['msgDeal'] = '';
+$_SESSION['msgProd'] = '';
 $errMsg = '';
-// var_dump($_REQUEST);
+
 if (isset($_REQUEST['saveRec'])) {
+  // var_dump($_REQUEST);
   $errMsg = createNewProduct();
   $_REQUEST['v'] = "update";
 }
 
+if (isset($_POST['updateRec'])) {
+  
+  if (canSaveEdit()) {
+    $errMsg = updateProduct();
+    $_REQUEST['v'] = "update";
+  } else {
+    $errMsg = $_SESSION['msgProd'];
+    $_REQUEST['v'] = "edit";
+  }
+}
+
+if (isset($_POST['statusRec'])) {
+  $errMsg = updateStatus();
+  $_REQUEST['v'] = "update";
+}
 
 ?>
 
@@ -54,7 +70,7 @@ if (isset($_REQUEST['saveRec'])) {
               <?php } ?>
             </div>
             <form method="post" target="">
-              <?php //echo buildDisableForm($_REQUEST['rid']) ?>
+              <?php echo buildDisableForm($_REQUEST['rid']) ?>
             </form>
           </div>
         </div>
@@ -62,10 +78,10 @@ if (isset($_REQUEST['saveRec'])) {
         <div class="row">
           <div class="card-body card-success">
             <div class="card-header">
-              <h3 class="card-title">Edit Deal</h3>
+              <h3 class="card-title">Edit Product</h3>
             </div>
             <form method="post" target="">
-              <?php //echo buildEditForm($_REQUEST['rid']); ?>
+              <?php echo buildEditForm($_REQUEST['rid']); ?>
             </form>
           </div>
         </div>
@@ -108,13 +124,15 @@ function createNewProduct()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
       $expdate=date("Y-m-d", strtotime($_REQUEST['cocoLastExpDate']));
+      $measure=getProductMeasure();
       
-      $sql = "INSERT INTO dkn_cocos (cocoName,cocoQuantity,
+      $sql = "INSERT INTO dkn_cocos (cocoName,cocoMeasure,cocoQuantity,
         cocoUnitSize,cocoReOrderLevel,cocoDescription,cocoLastExpDate) 
-        VALUES (:coName,:coQtty,:coUnit,:coReorder,:coDescription,:coLastExpDate)";
+        VALUES (:coName,:coMeasure,:coQtty,:coUnit,:coReorder,:coDescription,:coLastExpDate)";
 
       $stmt = $con->prepare($sql);//date("Y-m-d", strtotime($_REQUEST['clientCreatedDate']))
       $stmt->bindparam(":coName", $_REQUEST['cocoName'], PDO::PARAM_STR);
+      $stmt->bindparam(":coMeasure", $measure, PDO::PARAM_STR);
       $stmt->bindparam(":coQtty", $_REQUEST['cocoQuantity'], PDO::PARAM_INT);
       $stmt->bindparam(":coUnit", $_REQUEST['cocoUnitSize'], PDO::PARAM_INT);
       $stmt->bindparam(":coReorder", $_REQUEST['cocoReOrderLevel'], PDO::PARAM_INT);
@@ -124,38 +142,7 @@ function createNewProduct()
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The Prodcut <b>[" . $_REQUEST['cocoName'] . "...]</b> has been created!";
-        //trigger_error($msg, E_USER_NOTICE);
-      }
-    } else {
-      trigger_error($db->connectionError(), E_USER_NOTICE);
-    }
-    $db->closeConnection();
-  } catch (PDOException $e) {
-    trigger_error($e->getMessage(), E_USER_NOTICE);
-  }
-
-  return ($rtn == '') ? 'No Deal Data' : $rtn;
-}
-
-function disableDeal()
-{
-  $rtn = '';
-  try {
-    $db = new connectDatabase();
-    if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
-
-      $sql = "UPDATE tcs_deals SET dealDescription=:dlDesc,dealStatus='deleted' WHERE dealID=:recID";
-
-      $stmt = $con->prepare($sql);
-      $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
-      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
-      // $stmt->bindparam(":dlStatus", $_REQUEST['dealStatus'], PDO::PARAM_STR);
-      $row = $stmt->execute();
-
-      if ($row) {
-        $rtn = "The deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been deleted";
+        $rtn = "The Product <b>[" . $_REQUEST['cocoName'] . "...]</b> has been created!";
         //trigger_error($msg, E_USER_NOTICE);
       }
     } else {
@@ -177,16 +164,15 @@ function updateStatus()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "UPDATE tcs_deals SET dealDescription=:dlDesc,dealStatus=:dlStatus WHERE dealID=:recID";
+      $sql = "UPDATE dkn_cocos SET cocoStatus=:coStatus WHERE cocoID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
-      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlStatus", $_REQUEST['dealStatus'], PDO::PARAM_STR);
+      $stmt->bindparam(":coStatus", $_REQUEST['cocoStatus'], PDO::PARAM_STR);
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The status of the deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been updated";
+        $rtn = "The status of the Product <b>[" . substr($_REQUEST['cocoDescription'],0,15). "...]</b> has been updated";
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -199,7 +185,7 @@ function updateStatus()
   return ($rtn == '') ? 'No Deal Data' : $rtn;
 }
 
-function UpdateDeal()
+function updateProduct()
 {
   $rtn = '';
   try {
@@ -207,38 +193,28 @@ function UpdateDeal()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $cdate=date("Y-m-d", strtotime($_REQUEST['dealCreatedDate']));
-      $ddate=date("Y-m-d", strtotime($_REQUEST['dealDueDate']));
-      $dldgn=convertNumber($_REQUEST['dealDesign']);
-      $dlsew=convertNumber($_REQUEST['dealSewing']);
-      $dlmat=convertNumber($_REQUEST['dealMaterial']);
-      $dlmnu=convertNumber($_REQUEST['dealManu']);
-      $dlcod=getCOD();
-      $dlamo=convertNumber($_REQUEST['dealAmount']);
-      $dlpro=getProfit($_REQUEST['dealAmount']);
+      $cdate=date("Y-m-d", strtotime($_REQUEST['cocoLastExpDate']));
+      $measure=getProductMeasure();
 
-      $sql = "UPDATE tcs_deals SET clientID=:dlClient,dealDescription=:dlDesc,dealCreatedDate=:dlCreatDate,
-        dealDueDate=:dlDueDate,dealDesign=:dlDesign,dealSewing=:dlSewing,dealMaterial=:dlMaterial,dealManu=:dlManu,
-        dealCOD=:dlCOD,dealAmount=:dlAmount,dealProfit=:dlProfit 
-        WHERE dealID=:recID";
+      //cocoName,cocoMeasure,cocoQuantity,      cocoUnitSize,cocoReOrderLevel,cocoDescription,cocoLastExpDate
+
+      $sql = "UPDATE dkn_cocos SET cocoName=:coName,cocoMeasure=:coMeasure,cocoQuantity=:coQuantity,
+        cocoUnitSize=:coUnitSize,cocoReOrderLevel=:coReOrderLevel,cocoDescription=:coDescription,
+        cocoLastExpDate=:coLastExpDate WHERE cocoID=:recID";
 
       $stmt = $con->prepare($sql);
       $stmt->bindparam(":recID", $_REQUEST['rid'], PDO::PARAM_INT);
-      $stmt->bindparam(":dlClient", $_REQUEST['clientID'], PDO::PARAM_INT);
-      $stmt->bindparam(":dlDesc", $_REQUEST['dealDescription'], PDO::PARAM_STR);
-      $stmt->bindparam(":dlCreatDate", $cdate, PDO::PARAM_STR);
-      $stmt->bindparam(":dlDueDate", $ddate, PDO::PARAM_STR);
-      $stmt->bindparam(":dlDesign", $dldgn, PDO::PARAM_STR);
-      $stmt->bindparam(":dlSewing", $dlsew, PDO::PARAM_STR);
-      $stmt->bindparam(":dlMaterial", $dlmat, PDO::PARAM_STR);
-      $stmt->bindparam(":dlManu", $dlmnu, PDO::PARAM_STR);
-      $stmt->bindparam(":dlCOD", $dlcod, PDO::PARAM_STR);
-      $stmt->bindparam(":dlAmount", $dlamo, PDO::PARAM_STR);
-      $stmt->bindparam(":dlProfit", $dlpro, PDO::PARAM_STR);
+      $stmt->bindparam(":coName", $_REQUEST['cocoName'], PDO::PARAM_STR);
+      $stmt->bindparam(":coMeasure", $measure, PDO::PARAM_STR);
+      $stmt->bindparam(":coQuantity", $_REQUEST['cocoQuantity'], PDO::PARAM_INT);
+      $stmt->bindparam(":coUnitSize", $_REQUEST['cocoUnitSize'], PDO::PARAM_INT);
+      $stmt->bindparam(":coReOrderLevel", $_REQUEST['cocoReOrderLevel'], PDO::PARAM_INT);
+      $stmt->bindparam(":coLastExpDate", $cdate, PDO::PARAM_STR);
+      $stmt->bindparam(":coDescription", $_REQUEST['cocoDescription'], PDO::PARAM_STR);
       $row = $stmt->execute();
 
       if ($row) {
-        $rtn = "The deal <b>[" . substr($_REQUEST['dealDescription'],0,15). "...]</b> has been updated";
+        $rtn = "The Product <b>[" . substr($_REQUEST['cocoDescription'],0,15). "...]</b> has been updated";
         //trigger_error($msg, E_USER_NOTICE);
       }
     } else {
@@ -249,7 +225,7 @@ function UpdateDeal()
     trigger_error($e->getMessage(), E_USER_NOTICE);
   }
 
-  return ($rtn == '') ? 'No Deal Data' : $rtn;
+  return ($rtn == '') ? 'No Product Data' : $rtn;
 }
 
 function getProductRecords()
@@ -260,7 +236,7 @@ function getProductRecords()
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT cocoID,cocoName,cocoUnitSize,cocoQuantity,cocoDescription
+      $sql = "SELECT cocoID,cocoName,cocoMeasure,cocoUnitSize,cocoQuantity,cocoDescription
         FROM dkn_cocos WHERE cocoStatus ='active' ORDER BY cocoID ASC";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->execute();
@@ -269,10 +245,11 @@ function getProductRecords()
       foreach ($stmt->fetchAll() as $row) {
         $rID = $row['cocoID'];
         
-        $rtn .= '<tr><td>' . $row['cocoName'] . '</td><td style="text-align:right;">' . $row['cocoUnitSize'] . ' <b>Kg</b></td>'
+        $rtn .= '<tr><td>' . $row['cocoName'] . '</td><td style="text-align:right;">' . $row['cocoUnitSize'] 
+          . ' '.$row['cocoMeasure'] .'</td>'
           . '<td style="text-align:right;">' . $row['cocoQuantity']  . '</td><td>' . $row['cocoDescription']  . '</td>'
-          . '<td style="text-align:center;"><span class="badge"><a href="home.php?p=dikins_list&v=disable&rid=' . $rID . '">'
-          . '<i class="nav-icon fas fa-window-restore" title="Delete Product" style="color:red;"></i>'
+          . '<td style="text-align:center;"><span class="badge"><a href="home.php?p=dikins_list&v=status&rid=' . $rID . '">'
+          . '<i class="nav-icon fas fa-window-restore" title="Delist Product" style="color:red;"></i>'
           . '</a></span><span class="badge"><a href="home.php?p=dikins_list&v=edit&rid=' . $rID . '">'
           . '<i class="nav-icon fas fa-edit" title="Update Product" style="color:blue;"></i></a></span></td></tr>';
       }
@@ -286,7 +263,7 @@ function getProductRecords()
   return ($rtn == '') ? '<tr><td colspan="6" style="color:red;text-align:center;"><b>No Products Available</b></td></tr>' : $rtn;
 }
 
-function getSpecificDeal($rec)
+function getSpecificProduct($rec)
 {
   $rtn = array();
   try {
@@ -294,9 +271,8 @@ function getSpecificDeal($rec)
     if ($db->isLastQuerySuccessful()) {
       $con = $db->connect();
 
-      $sql = "SELECT dealID,c.clientID,dealCreatedDate,dealDueDate,
-        dealDescription,dealDesign,dealSewing,dealMaterial,dealManu,dealCOD,dealAmount
-        FROM tcs_deals d LEFT JOIN tcs_clients c ON d.clientID=c.clientID WHERE dealID=:id";
+      $sql = "SELECT cocoID,cocoName,cocoMeasure,cocoQuantity,cocoUnitSize,cocoReOrderLevel,
+        cocoDescription,cocoLastExpDate FROM dkn_cocos WHERE cocoID=:id";
       $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
       $stmt->bindparam(":id", $rec, PDO::PARAM_INT);
       $stmt->execute();
@@ -315,73 +291,25 @@ function getSpecificDeal($rec)
   return $rtn;
 }
 
-function getClients($cl=0)
-{
-  $rtn = '<option value="0">None Selected</option>';
-  try {
-    $db = new connectDatabase();
-    if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
-
-      $sql = "SELECT clientID,clientName FROM tcs_clients WHERE clientStatus='active' ORDER BY clientID ASC";
-      $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
-      $stmt->execute();
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-
-      foreach ($stmt->fetchAll() as $row) {
-        $d1 = $row['clientName'];
-        $rID = $row['clientID'];
-
-        if (isset($cl) && $cl == $rID) {
-          $rtn .= '<option selected value="' . $rID . '">' . $d1 . '</option>';
-        } else {
-          $rtn .= '<option value="' . $rID . '">' . $d1 . '</option>';
-        }
-      }
-    } else {
-      trigger_error($db->connectionError(), E_USER_NOTICE);
-    }
-    $db->closeConnection();
-  } catch (Exception $e) {
-    trigger_error($e->getMessage(), E_USER_NOTICE);
-  }
-  return ($rtn == '') ? '<option value="0">Empty Client List</option>' : $rtn;
-}
-
-function getDealStatus($did=0)
+function getProdStatus($did = '')
 {
   $rtn = '';
-  $arr=array('created','agreed','active','completed','qc passed');
-  try {
-    $db = new connectDatabase();
-    if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
+  $arr = array('active', 'not active');
 
-      $sql = "SELECT dealStatus FROM tcs_deals WHERE dealID=:id";
-      $stmt = $con->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
-
-      $stmt->bindparam(":id", $did, PDO::PARAM_INT);      
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      $stmt->execute();
-
-      $row=$stmt->fetch();
-      $d1 = $row['dealStatus'];
-
-      for ($cnt=0; $cnt<count($arr);$cnt++) {
-        if (isset($did) && $arr[$cnt] == $d1) {
-          $rtn .= '<option selected value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
-        } else {
-          $rtn .= '<option value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
-        }
-      }
+  for ($cnt = 0; $cnt < count($arr); $cnt++) {
+    if (isset($did) && $arr[$cnt] == $did) {
+      $rtn .= '<option selected value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
     } else {
-      trigger_error($db->connectionError(), E_USER_NOTICE);
+      $rtn .= '<option value="' . $arr[$cnt] . '">' . $arr[$cnt] . '</option>';
     }
-    $db->closeConnection();
-  } catch (Exception $e) {
-    trigger_error($e->getMessage(), E_USER_NOTICE);
   }
   return ($rtn == '') ? '<option value="0">Empty Status List</option>' : $rtn;
+}
+
+
+function getProductMeasure()
+{
+  return ($_REQUEST['measure']=='ml') ? 'ml':'kg';
 }
 
 
@@ -390,43 +318,41 @@ function getDealStatus($did=0)
 ///--------------------------------------------------
 function buildEditForm($id)
 {
-  $deal = getSpecificDeal($id);
-  if (is_array($deal) && count($deal) >= 1) {
-    $cdat=new DateTime($deal['dealCreatedDate']);
-    $ddat=new DateTime($deal['dealDueDate']);
+  $prod = getSpecificProduct($id);
+  if (is_array($prod) && count($prod) >= 1) {
+    $cdat = new DateTime($prod['cocoLastExpDate']);
 
-    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
-    $rtn .= '<select class="form-control" id="clientID" name="clientID">'.getClients($id).'</select>';
-    $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
-    $rtn .= '<input type="date" class="form-control" name="dealCreatedDate" id="dealCreatedDate" onchange="updateDueDate();" value="'.$deal['dealCreatedDate'].'">';
-    $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
-    $rtn .= '<input type="date" class="form-control" name="dealDueDate" id="dealDueDate" value="'.$deal['dealDueDate'].'"></div></div>';
+    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoName">Product Name</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoName" id="cocoName" value="'.$prod['cocoName'].'" required>';
+    if ($prod['cocoMeasure']=='kg') {
+      $rtn .= '<input type="radio" id="kilo" name="measure" value="kg" checked><label for="kilo">&nbsp;By Kilograms </label> &nbsp;&nbsp;';
+      $rtn .= '<input type="radio" id="litre" name="measure" value="ml"><label for="litre">&nbsp;By Litres </label>';
+    } else {
+      $rtn .= '<input type="radio" id="kilo" name="measure" value="kg"><label for="kilo">&nbsp;By Kilograms </label> &nbsp;&nbsp;';
+      $rtn .= '<input type="radio" id="litre" name="measure" value="ml" checked><label for="litre">&nbsp;By Litres </label>';
+    }
+    $rtn .= '<label for="cocoUnitSize">Product Unit (kg/litres)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoUnitSize" id="cocoUnitSize" value="'.$prod['cocoUnitSize'].'" required></div></div>';
 
-    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Design Cost</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealDesign" id="dealDesign" 
-      required onchange="formatCurrency(\'dealDesign\');" value="'.number_format($deal['dealDesign'],2).'">';
-    $rtn .= '<label for="dealSewing">Sewing Cost</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealSewing" id="dealSewing" 
-      required onchange="formatCurrency(\'dealSewing\');" value="'.number_format($deal['dealSewing'],2).'">';
-    $rtn .= '<label for="dealMaterial">Material Cost</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealMaterial" id="dealMaterial"  
-      required onchange="formatCurrency(\'dealMaterial\');" value="'.number_format($deal['dealMaterial'],2).'"></div></div>';
+    $rtn .= '<div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoQuantity">Product Quantity (Carton)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoQuantity" id="cocoQuantity" value="'.$prod['cocoQuantity'].'" required>';
+    $rtn .= '<label for="cocoReOrderLevel">Re-order Level (Carton)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoReOrderLevel" id="cocoReOrderLevel" value="'.$prod['cocoReOrderLevel'].'" required >';
+    $rtn .= '<label for="cocoLastExpDate">Product Expiration Date</label>';
+    $rtn .= '<input type="date" class="form-control" name="cocoLastExpDate" id="cocoLastExpDate" value="' . getDueDate($prod['cocoLastExpDate']) . '"></div></div>';
 
-    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealMaterial">Manufacturing Cost</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealManu" id="dealManu" 
-      required onchange="formatCurrency(\'dealManu\');" value="'.number_format($deal['dealManu'],2).'">';
-    $rtn .= '<label for="dealAmount">Amount Charged</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" name="dealAmount" id="dealAmount" 
-      required onchange="updateMargin();" value="'.number_format($deal['dealAmount'],2).'">';
-    $rtn .= '<label for="dealDescription">Deal Description</label>';
-    $rtn .= '<textarea class="form-control" rows="1" name="dealDescription" id="dealDescription" spellcheck="true" 
-      required>'.$deal['dealDescription'].'</textarea></div></div>';
+    $rtn .= '<div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoDescription">Product Description</label>';
+    $rtn .= '<textarea class="form-control" rows="4" name="cocoDescription" id="cocoDescription" spellcheck="true" required>'.$prod['cocoDescription'].'</textarea><br>';
+    $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Product</button></div></div></div>';
 
-    $rtn .= '<div class="col-sm-12"><div class="form-group"><div id="profit" name="profit" class="float-left" style="font-weight:bold;color:red;"></div>';
-    $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Deal</button></div></div></div>';
-    $_SESSION['oldRec'] = $deal;
+    $rtn .= '</div></div></div>';
+
+    $_SESSION['oldRec'] = $prod;
   }
-  
+
   return $rtn;
 }
 
@@ -435,16 +361,18 @@ function buildNewForm()
   $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group">';
   $rtn .= '<label for="cocoName">Product Name</label>';
   $rtn .= '<input type="text" class="form-control" name="cocoName" id="cocoName" required>';
-  $rtn .= '<label for="cocoUnitSize">Product Unit (KG)</label>';
-  $rtn .= '<input type="text" class="form-control" name="cocoUnitSize" id="cocoUnitSize" required>';
-  $rtn .= '<label for="cocoQuantity">Product Quantity (Carton)</label>';
-  $rtn .= '<input type="text" class="form-control" name="cocoQuantity" id="cocoQuantity" required></div></div>';
+  $rtn .= '<input type="radio" id="kilo" name="measure" value="kg" checked><label for="kilo">&nbsp;By Kilograms </label> &nbsp;&nbsp;';
+  $rtn .= '<input type="radio" id="litre" name="measure" value="ml"><label for="litre">&nbsp;By Litres </label>';
+  $rtn .= '<label for="cocoUnitSize">Product Unit (kg/litres)</label>';
+  $rtn .= '<input type="text" class="form-control" name="cocoUnitSize" id="cocoUnitSize" required></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group">';
+  $rtn .= '<label for="cocoQuantity">Product Quantity (Carton)</label>';
+  $rtn .= '<input type="text" class="form-control" name="cocoQuantity" id="cocoQuantity" required>';
   $rtn .= '<label for="cocoReOrderLevel">Re-order Level (Carton)</label>';
   $rtn .= '<input type="text" class="form-control" name="cocoReOrderLevel" id="cocoReOrderLevel" required >';
   $rtn .= '<label for="cocoLastExpDate">Product Expiration Date</label>';
-  $rtn .= '<input type="date" class="form-control" name="cocoLastExpDate" id="cocoLastExpDate" value="'.getDueDate().'"></div></div>';
+  $rtn .= '<input type="date" class="form-control" name="cocoLastExpDate" id="cocoLastExpDate" value="'.getDueDate("today").'"></div></div>';
   
   $rtn .= '<div class="col-sm-4"><div class="form-group">';
   $rtn .= '<label for="cocoDescription">Product Description</label>';
@@ -458,41 +386,42 @@ function buildNewForm()
 
 function buildDisableForm($id)
 {
-  $rtn = '';
-  $deal = array();
-  $deal = getSpecificDeal($id);
-  // die('the value is '.$gst['guestVisitDate']);
-  if (is_array($deal) && count($deal) >= 1) {
-    $cdat=new DateTime($deal['dealCreatedDate']);
-    $ddat=new DateTime($deal['dealDueDate']);
+  $prod = getSpecificProduct($id);
+  if (is_array($prod) && count($prod) >= 1) {
+    $cdat = new DateTime($prod['cocoLastExpDate']);
 
-    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group"><label for="clientID">Client Name</label>';
-    $rtn .= '<select class="form-control" id="clientID" name="clientID" disabled>'.getClients($id).'</select>';
-    $rtn .= '<label for="dealCreatedDate">Deal Date</label>';
-    $rtn .= '<input type="date" class="form-control" readonly value="'.$deal['dealCreatedDate'].'">';
-    $rtn .= '<label for="dealDueDate">Deal Delivery Date</label>'; 
-    $rtn .= '<input type="date" class="form-control" name="dealDueDate" readonly id="dealDueDate" value="'.$deal['dealDueDate'].'"></div></div>';
-
-    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDesign">Total Cost of Design</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" readonly value="'.number_format($deal['dealCOD'],2).'">';
-    $rtn .= '<label for="dealAmount">Amount Charged</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right;" readonly value="'.number_format($deal['dealAmount'],2).'">';
-    $rtn .= '<label for="dealMaterial">Profit/Margin</label>';
-    $rtn .= '<input type="text" class="form-control" style="text-align:right; font-weight:bold" 
-      readonly value="'.number_format(($deal['dealAmount']-$deal['dealCOD']),2).'"></div></div>';
-
-    $rtn .= '<div class="col-sm-4"><div class="form-group"><label for="dealDescription">Deal Description</label>';
-    $rtn .= '<textarea class="form-control" rows="2" name="dealDescription" id="dealDescription" spellcheck="true" required>'.$deal['dealDescription'].'</textarea>';
-    $rtn .= '<label for="dealMaterial">Current Status</label>';
-    if ($_REQUEST['v'] == 'disable') {
-      $rtn .= '<select class="form-control" id="dealStatus" name="dealStatus" disabled>'.getDealStatus($id).'</select></div>';
-      $rtn .= '<div class="form-group"><button type="submit" id="deleteRec" name="deleteRec" class="btn btn-dark float-right">Delete Deal</button></div>';
+    $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoName">Product Name</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoName" id="cocoName" value="'.$prod['cocoName'].'" readonly>';
+    if ($prod['cocoMeasure']=='kg') {
+      $rtn .= '<input type="radio" id="kilo" name="measure" value="kg" checked disabled><label for="kilo">&nbsp;By Kilograms </label> &nbsp;&nbsp;';
+      $rtn .= '<input type="radio" id="litre" name="measure" value="ml" disabled><label for="litre">&nbsp;By Litres </label>';
     } else {
-      $rtn .= '<select class="form-control" id="dealStatus" name="dealStatus" required>'.getDealStatus($id).'</select></div>';
-      $rtn .= '<div class="form-group"><button type="submit" id="statusRec" name="statusRec" class="btn btn-secondary float-right">Update Status</button></div>';
-    }    
-    $rtn .= '</div></div>';
-    $_SESSION['oldRec'] = $deal;
+      $rtn .= '<input type="radio" id="kilo" name="measure" value="kg" disabled><label for="kilo">&nbsp;By Kilograms </label> &nbsp;&nbsp;';
+      $rtn .= '<input type="radio" id="litre" name="measure" value="ml" checked disabled><label for="litre">&nbsp;By Litres </label>';
+    }
+    $rtn .= '<label for="cocoUnitSize">Product Unit (kg/litres)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoUnitSize" id="cocoUnitSize" value="'.$prod['cocoUnitSize'].'" readonly></div></div>';
+
+    $rtn .= '<div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoQuantity">Product Quantity (Carton)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoQuantity" id="cocoQuantity" value="'.$prod['cocoQuantity'].'" readonly>';
+    $rtn .= '<label for="cocoReOrderLevel">Re-order Level (Carton)</label>';
+    $rtn .= '<input type="text" class="form-control" name="cocoReOrderLevel" id="cocoReOrderLevel" value="'.$prod['cocoReOrderLevel'].'" readonly >';
+    $rtn .= '<label for="cocoLastExpDate">Product Expiration Date</label>';
+    $rtn .= '<input type="date" class="form-control" name="cocoLastExpDate" id="cocoLastExpDate" value="' . getDueDate($prod['cocoLastExpDate']) . '" readonly></div></div>';
+
+    $rtn .= '<div class="col-sm-4"><div class="form-group">';
+    $rtn .= '<label for="cocoDescription">Product Description</label>';
+    $rtn .= '<textarea class="form-control" rows="2" name="cocoDescription" id="cocoDescription" spellcheck="true" readonly>'.$prod['cocoDescription'].'</textarea><br>';
+    $rtn .= '<label for="cocoStatus">Current Status</label>';
+    $rtn .= '<select class="form-control" id="cocoStatus" name="cocoStatus" required>'.getProdStatus($id).'</select></div>';
+    $rtn .= '<div class="form-group"><button type="submit" id="statusRec" name="statusRec" class="btn btn-secondary float-right">Update Status</button></div>';
+    // $rtn .= '<button type="submit" id="updateRec" name="updateRec" class="btn btn-success float-right">Update Product</button></div></div></div>';
+
+    $rtn .= '</div></div></div>';
+
+    $_SESSION['oldRec'] = $prod;
   }
 
   return $rtn;
@@ -505,26 +434,19 @@ function buildDisableForm($id)
 function canSaveEdit()
 {
   $rtn = false;
-  $cse = array();
   $oldRec = $_SESSION['oldRec'];
 
-  $cse['dealID'] = (int)$_REQUEST['rid'];
-  $cse['clientID'] = ($_REQUEST['clientID']=="0")?NULL:(int)$_REQUEST['clientID'];
-  $cse['dealCreatedDate'] = $_REQUEST['dealCreatedDate'];
-  $cse['dealDueDate'] = $_REQUEST['dealDueDate'];
-  $cse['dealDescription'] = $_REQUEST['dealDescription'];
-  $cse['dealDesign'] = str_replace(',','',$_REQUEST['dealDesign']);
-  $cse['dealSewing'] = str_replace(',','',$_REQUEST['dealSewing']);
-  $cse['dealMaterial'] = str_replace(',','',$_REQUEST['dealMaterial']);
-  $cse['dealManu'] = str_replace(',','',$_REQUEST['dealManu']);
-  $cse['dealCOD'] = str_replace(',','',number_format(getCOD(),2));
-  $cse['dealAmount'] = str_replace(',','',$_REQUEST['dealAmount']);
+  if ($oldRec['cocoID'] != intval($_REQUEST['rid'])) {$rtn=true;};
+  if ($oldRec['cocoName'] != $_REQUEST['cocoName']) {$rtn=true;};
+  if ($oldRec['cocoMeasure'] != $_REQUEST['measure']) {$rtn=true;};
+  if ($oldRec['cocoQuantity'] != intval($_REQUEST['cocoQuantity'])){$rtn=true;};
+  if ($oldRec['cocoUnitSize'] != intval($_REQUEST['cocoUnitSize'])){$rtn=true;};
+  if ($oldRec['cocoReOrderLevel'] != intval($_REQUEST['cocoReOrderLevel'])){$rtn=true;};
+  if ($oldRec['cocoDescription'] != $_REQUEST['cocoDescription']){$rtn=true;};
+  if ($oldRec['cocoLastExpDate'] != $_REQUEST['cocoLastExpDate']){$rtn=true;};
 
-  if (count(array_diff($oldRec, $cse)) >= 1) {
-    $rtn = true;
-  } else {
-    $_SESSION['msgDeal'] = 'No new data to update!';
-    $rtn = false;
+  if ($rtn == false) {
+    $_SESSION['msgProd'] = 'No new data to update!';
   }
   return $rtn;
 }
@@ -540,26 +462,17 @@ function getToday()
   return $dt->format('Y-m-d');
 }
 
-function getDueDate()
+function getDueDate($dt)
 {
-  $dt = new DateTime('now');
-  $dt->add(new DateInterval('P1Y'));
-  return $dt->format('Y-m-d');
+  if ($dt =='today'){
+    $dt = new DateTime('now');
+    $dt->add(new DateInterval('P1Y'));
+    return $dt->format('Y-m-d');
+  } else {
+    return date('Y-m-d',strtotime ($dt));
+  }
+    
+  
 }
 
-function convertNumber($num)
-{
-  return intval(str_replace(',','',$num));
-}
-
-function getCOD()
-{
-  return floatval(convertNumber($_REQUEST['dealDesign'])+convertNumber($_REQUEST['dealSewing'])
-    +convertNumber($_REQUEST['dealMaterial'])+convertNumber($_REQUEST['dealManu']));
-}
-
-function getProfit($amt)
-{
-  return floatval(convertNumber($amt)-getCOD());
-}
 ?>

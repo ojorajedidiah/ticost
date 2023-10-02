@@ -31,7 +31,7 @@ class connectDatabase
      *  param has been adjust with passed parameter set inside the class.
      **/
 
-    $conParameters = array("host" => "localhost", "username" => "ticost", "password" => "titilivate01!", "dbname" => "ticost");
+    $conParameters = array("host" => "localhost", "username" => "ticost", "password" => "titilivate01!", "dbname" => "ticostco_shop");
     $conType = 'mysql';
 
     if (is_array($conParameters)) {

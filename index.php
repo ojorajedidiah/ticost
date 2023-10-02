@@ -119,7 +119,7 @@ if (isset($_REQUEST['login']) && (isset($_REQUEST['vw']) && $_REQUEST['vw'] == '
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Titilivate Couture & Style | Log in</title>
 
-  <link rel="stylesheet" href="assets/plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/all.min.css">
   <link rel="stylesheet" href="assets/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
   <link rel="stylesheet" href="assets/css/adminlte.min.css">
 </head>

@@ -13,13 +13,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Titilivate Couture & Style</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
     <link rel="stylesheet" href="assets/css/ticost.css">
-    <link rel="stylesheet" href="assets/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/all.min.css">
     <link rel="stylesheet" href="assets/css/adminlte.min.css">
     
     <!-- <link rel="stylesheet" href="assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">     -->
-    <link rel="stylesheet" href="assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-    <link rel="stylesheet" href="assets/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+    <link rel="stylesheet" href="assets/css/responsive.bootstrap4.min.css">
+    <link rel="stylesheet" href="assets/css/buttons.bootstrap4.min.css">
     
     <link rel="stylesheet" href="assets/css/jquery-ui.css">
     <script src="assets/js/jquery-3.6.0.js"></script>

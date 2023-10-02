@@ -20,39 +20,16 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
     });
 
     $(function() {
-          $("#dikins").DataTable({
-            "ajax": 'dikins.txt',
-            "paging": true,
-            "lengthChange": false,
-            "ordering": true,
-            "searching": false,
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-            "columns": [{
-                data: 'cocoName'
-              },
-              {
-                data: 'cocoUnitSize'
-              },
-              {
-                data: 'cocoImage',
-                render: function(data) {
-                  return '<a href="/assets/img/checkmart.jpg">Dikins</a>';
-                }
-              },
-              {
-                data: 'cocoQuantity'
-              },
-              {
-                data: 'cocoDescription'
-              },
-              {
-                data: 'action'
-              },
-            ]
-
-          });
+      $("#dikins").DataTable({
+        "paging": true,
+        "lengthChange": false,
+        "ordering": true,
+        "searching": false,
+        "info": true,
+        "autoWidth": false,
+        "responsive": true,
+      });
+    });
   </script>
   <script type="text/javascript">
     function updateDueDate() {
@@ -124,8 +101,6 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
                   <div class="row mb-2">
                     <div class="col-sm-6">
                       <h1 class="m-0" style="font-family: 'Lucy Said Ok', Courier, monospace; font-size:xxx-large;">Titilivate Couture & Style</h1>
-                      <!-- <h3 class="card-title" style="color:cadetblue;"><?php //echo userDetails(); 
-                                                                            ?></h3> -->
                     </div>
                     <div class="col-sm-6">
                       <ol class="breadcrumb float-sm-right">
@@ -206,7 +181,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
   <script src="assets/js/adminlte.min.js"></script>
   <!-- <script src="assets/js/jquery.knob.min.js"></script> -->
 
-  <script src="assets/plugins/datatables/jquery.dataTables.min.js"></script>
+  <script src="assets/js/jquery.dataTables.min.js"></script>
   <script src="assets/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
   <script src="assets/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
   <script src="assets/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
@@ -280,7 +255,7 @@ if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] == 1) {
   {
     $rtn = '';
     if (isset($_REQUEST['p']) && $_REQUEST['p'] != '') {
-      $rtn = ucwords($_REQUEST['p']);
+      $rtn = ucwords(str_replace(array( '_','"',',' ,';', '<', '>' ), ' ', $_REQUEST['p']));
     } else {
       $rtn = 'Dashboard';
     }
