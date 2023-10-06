@@ -55,40 +55,45 @@ function createNewProduct()
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
-      $expdate = date("Y-m-d", strtotime($_REQUEST['purExpDate']));
-      $pdate = date("Y-m-d", strtotime($_REQUEST['purDate']));
+      if (canSaveData()) {
+        $con = $db->connect();
+        $expdate = date("Y-m-d", strtotime($_REQUEST['purExpDate']));
+        $pdate = date("Y-m-d", strtotime($_REQUEST['purDate']));
 
-      // insert new supplies into the cocspurchase table
-      $sql = "INSERT INTO dkn_cocospurchase (purCocoID,purDate,purExpDate,purQuantity,
+        // insert new supplies into the cocspurchase table
+        $sql = "INSERT INTO dkn_cocospurchase (purCocoID,purDate,purExpDate,purQuantity,
         purCost) VALUES (:coID,:pDate,:pExpDate,:pQtty,:pCost)";
 
-      $stmt = $con->prepare($sql); 
-      $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
-      $stmt->bindparam(":pDate", $pdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
-      $stmt->bindparam(":pCost", $_REQUEST['purCost'], PDO::PARAM_STR);
+        $stmt = $con->prepare($sql);
+        $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+        $stmt->bindparam(":pDate", $pdate, PDO::PARAM_STR);
+        $stmt->bindparam(":pExpDate",
+          $expdate,
+          PDO::PARAM_STR
+        );
+        $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+        $stmt->bindparam(":pCost", $_REQUEST['purCost'], PDO::PARAM_STR);
 
-      $row = $stmt->execute();
-      // $cnt++;
+        $row = $stmt->execute();
+        // $cnt++;
 
 
-      // update the quantity and expiration date fields in cocos table
-      $sql = "UPDATE dkn_cocos SET cocoQuantity=cocoQuantity+:pQtty,
+        // update the quantity and expiration date fields in cocos table
+        $sql = "UPDATE dkn_cocos SET cocoQuantity=cocoQuantity+:pQtty,
         cocoLastExpdate=:pExpDate WHERE cocoID=:coID";
 
-      $stmt = $con->prepare($sql); 
-      $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
-      $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+        $stmt = $con->prepare($sql);
+        $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+        $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
+        $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
 
-      $row = $stmt->execute();
+        $row = $stmt->execute();
 
 
-      if ($row) {
-        $rtn = "The Product Supplies <b>[" . getSelectedProduct($_REQUEST['purCocoID']). "...]</b> has been created!";
-        //trigger_error($msg, E_USER_NOTICE);
+        if ($row) {
+          $rtn = "The Product Supplies <b>[" . getSelectedProduct($_REQUEST['purCocoID']) . "...]</b> has been created!";
+          //trigger_error($msg, E_USER_NOTICE);
+        }
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -189,6 +194,53 @@ function buildNewForm()
 
   return $rtn;
 }
+
+
+///--------------------------------------------------
+///------------ Data Validation functions -----------
+///--------------------------------------------------
+
+function canSaveData()
+{
+  $rtn = true;
+  // confirm that data does not already exist in the database
+  try {
+
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+      $sql = "SELECT * FROM dkn_cocspurchase WHERE purCocoID=:pCID 
+        AND purDate=:pDt AND purQuantity=:pQt AND purCost=:pCt";
+      
+      $stmt = $con->prepare($sql);
+      $stmt->bindparam(":pCID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+      $stmt->bindparam(":pDt", $_REQUEST['purDate'], PDO::PARAM_STR);
+      $stmt->bindparam(":pQt", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+      $stmt->bindparam(":pCt", $_REQUEST['purCost'], PDO::PARAM_INT);
+
+      $stmt->execute();
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+
+      // check if record (phonenumber) already exist
+      foreach ($stmt->fetchAll() as $row) {
+        $rtn = false;
+        trigger_error("This product supplies already exist in the Database!", E_USER_NOTICE);
+      }
+
+    } else {
+      $rtn=false;
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (PDOException $e) {
+    $rtn=false;
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+
+  return $rtn;
+}
+
+
 
 ///--------------------------------------------------
 ///------------ general-purpose functions -----------

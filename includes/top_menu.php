@@ -22,6 +22,7 @@
           <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
             <li><a href="home.php?p=deals" class="dropdown-item">Deals</a></li>
             <li><a href="home.php?p=clients" class="dropdown-item">Clients</a></li>
+            <li class="dropdown-divider"></li>
             <li><a href="" class="dropdown-item">Status Sheet</a></li>
           </ul>
         </li>
@@ -35,9 +36,12 @@
         <li class="nav-item dropdown">
           <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Dikins</a>
           <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
-            <li><a href="home.php?p=dikins_list" class="dropdown-item">Product Lising</a></li>
+            <li><a href="home.php?p=dikins_list" class="dropdown-item">Product Listing</a></li>
+            <li><a href="home.php?p=clients_list" class="dropdown-item">Client Listing</a></li>
+            <li class="dropdown-divider"></li>
             <li><a href="home.php?p=dikins_get" class="dropdown-item">Incoming Products</a></li>
             <li><a href="home.php?p=dikins_push" class="dropdown-item">Outgoing Products</a></li>
+            <li class="dropdown-divider"></li>
             <li><a href="home.php?p=dikins_list" class="dropdown-item">Status Sheet</a></li>
           </ul>
         </li>

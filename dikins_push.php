@@ -20,7 +20,7 @@ if (isset($_REQUEST['saveRec'])) {
         <div class="card-header">
           <div class="row">        
             <div class="col-sm-8">
-              <h5>Dikins Product Supplies</h5>
+              <h5>Client Supplies</h5>
               <?php if ($errMsg != '') { echo '<span style="color:red;font-size:15px;">' . $errMsg . '</span>'; } ?>
             </div>
             <div class="col-sm-4">
@@ -31,7 +31,7 @@ if (isset($_REQUEST['saveRec'])) {
         <div class="row">
           <div class="card-body card-success">
             <div class="card-header">
-              <h3 class="card-title">Create Product Supplies</h3>
+              <h3 class="card-title">Create Client Supplies</h3>
             </div>
             <?php echo buildNewForm(); ?>
           </div>
@@ -55,40 +55,45 @@ function createNewProduct()
   try {
     $db = new connectDatabase();
     if ($db->isLastQuerySuccessful()) {
-      $con = $db->connect();
-      $expdate = date("Y-m-d", strtotime($_REQUEST['purExpDate']));
-      $pdate = date("Y-m-d", strtotime($_REQUEST['purDate']));
+      if (canSaveData()) {
+        $con = $db->connect();
+        $expdate = date("Y-m-d", strtotime($_REQUEST['purExpDate']));
+        $pdate = date("Y-m-d", strtotime($_REQUEST['purDate']));
 
-      // insert new supplies into the cocspurchase table
-      $sql = "INSERT INTO dkn_cocospurchase (purCocoID,purDate,purExpDate,purQuantity,
+        // insert new supplies into the cocspurchase table
+        $sql = "INSERT INTO dkn_cocospurchase (purCocoID,purDate,purExpDate,purQuantity,
         purCost) VALUES (:coID,:pDate,:pExpDate,:pQtty,:pCost)";
 
-      $stmt = $con->prepare($sql); 
-      $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
-      $stmt->bindparam(":pDate", $pdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
-      $stmt->bindparam(":pCost", $_REQUEST['purCost'], PDO::PARAM_STR);
+        $stmt = $con->prepare($sql);
+        $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+        $stmt->bindparam(":pDate", $pdate, PDO::PARAM_STR);
+        $stmt->bindparam(":pExpDate",
+          $expdate,
+          PDO::PARAM_STR
+        );
+        $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+        $stmt->bindparam(":pCost", $_REQUEST['purCost'], PDO::PARAM_STR);
 
-      $row = $stmt->execute();
-      // $cnt++;
+        $row = $stmt->execute();
+        // $cnt++;
 
 
-      // update the quantity and expiration date fields in cocos table
-      $sql = "UPDATE dkn_cocos SET cocoQuantity=cocoQuantity+:pQtty,
+        // update the quantity and expiration date fields in cocos table
+        $sql = "UPDATE dkn_cocos SET cocoQuantity=cocoQuantity+:pQtty,
         cocoLastExpdate=:pExpDate WHERE cocoID=:coID";
 
-      $stmt = $con->prepare($sql); 
-      $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
-      $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
-      $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+        $stmt = $con->prepare($sql);
+        $stmt->bindparam(":coID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+        $stmt->bindparam(":pExpDate", $expdate, PDO::PARAM_STR);
+        $stmt->bindparam(":pQtty", $_REQUEST['purQuantity'], PDO::PARAM_INT);
 
-      $row = $stmt->execute();
+        $row = $stmt->execute();
 
 
-      if ($row) {
-        $rtn = "The Product Supplies <b>[" . getSelectedProduct($_REQUEST['purCocoID']). "...]</b> has been created!";
-        //trigger_error($msg, E_USER_NOTICE);
+        if ($row) {
+          $rtn = "The Product Supplies <b>[" . getSelectedProduct($_REQUEST['purCocoID']) . "...]</b> has been created!";
+          //trigger_error($msg, E_USER_NOTICE);
+        }
       }
     } else {
       trigger_error($db->connectionError(), E_USER_NOTICE);
@@ -99,6 +104,11 @@ function createNewProduct()
   }
 
   return ($rtn == '') ? 'No Product Supplies Data' : $rtn;
+}
+
+function getClients()
+{
+  return true;
 }
 
 function getProducts($cl=0)
@@ -169,26 +179,75 @@ function getSelectedProduct($rid)
 function buildNewForm()
 {
   $rtn = '<div class="row"><div class="col-sm-4"><div class="form-group">';
+  $rtn .= '<label for="purCocoID">Client Name</label>';
+  $rtn .= '<select class="form-control" id="purCocoID" name="purClientID" required>'.getClients().'</select>' ;
   $rtn .= '<label for="purCocoID">Product Name</label>';
-  $rtn .= '<select class="form-control" id="purCocoID" name="purCocoID" required>'.getProducts().'</select>' ;
-  $rtn .= '<label for="purDate">Product Supplied Date</label>';
-  $rtn .= '<input type="date" class="form-control" name="purDate" id="purDate" value="' . getToday() . '" required></div></div>';
+  $rtn .= '<select class="form-control" id="purCocoID" name="purCocoID" required>'.getProducts().'</select></div></div>' ;
 
   $rtn .= '<div class="col-sm-4"><div class="form-group">';
-  $rtn .= '<label for="purQuantity">Product Quantity</label>';
-  $rtn .= '<input type="text" class="form-control" name="purQuantity" id="purQuantity" required>';
+  $rtn .= '<label for="purDate">Product Supplied Date</label>';
+  $rtn .= '<input type="date" class="form-control" name="purDate" id="purDate" value="' . getToday() . '" required>';
   $rtn .= '<label for="purExpDate">Product Expiration Date</label>';
   $rtn .= '<input type="date" class="form-control" name="purExpDate" id="purExpDate" value="' . getDueDate('today') . '" required></div></div>';
 
   $rtn .= '<div class="col-sm-4"><div class="form-group">';
+  $rtn .= '<label for="purQuantity">Product Quantity</label>';
+  $rtn .= '<input type="text" class="form-control" name="purQuantity" id="purQuantity" required>';
   $rtn .= '<label for="purCost">Product Cost</label>';
-  $rtn .= '<input type="text" class="form-control" name="purCost" id="purCost" required><br>';
-  $rtn .= '<button type="submit" id="saveRec" name="saveRec" class="btn btn-success float-right">Create Supplies</button></div></div></div>';
+  $rtn .= '<input type="text" class="form-control" name="purCost" id="purCost" required></div></div></div>';
+  $rtn .= '<div class="row"><div class="col-sm-12"><button type="submit" id="saveRec" name="saveRec" class="btn btn-success float-right">Create Supplies</button></div></div>';
 
-  $rtn .= '</div></div></div>';
+  // $rtn .= '</div></div></div>';
 
   return $rtn;
 }
+
+
+///--------------------------------------------------
+///------------ Data Validation functions -----------
+///--------------------------------------------------
+
+function canSaveData()
+{
+  $rtn = true;
+  // confirm that data does not already exist in the database
+  try {
+
+    $db = new connectDatabase();
+    if ($db->isLastQuerySuccessful()) {
+      $con = $db->connect();
+      $sql = "SELECT * FROM dkn_cocspurchase WHERE purCocoID=:pCID 
+        AND purDate=:pDt AND purQuantity=:pQt AND purCost=:pCt";
+      
+      $stmt = $con->prepare($sql);
+      $stmt->bindparam(":pCID", $_REQUEST['purCocoID'], PDO::PARAM_INT);
+      $stmt->bindparam(":pDt", $_REQUEST['purDate'], PDO::PARAM_STR);
+      $stmt->bindparam(":pQt", $_REQUEST['purQuantity'], PDO::PARAM_INT);
+      $stmt->bindparam(":pCt", $_REQUEST['purCost'], PDO::PARAM_INT);
+
+      $stmt->execute();
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+
+      // check if record (phonenumber) already exist
+      foreach ($stmt->fetchAll() as $row) {
+        $rtn = false;
+        trigger_error("This product supplies already exist in the Database!", E_USER_NOTICE);
+      }
+
+    } else {
+      $rtn=false;
+      trigger_error($db->connectionError(), E_USER_NOTICE);
+    }
+    $db->closeConnection();
+  } catch (PDOException $e) {
+    $rtn=false;
+    trigger_error($e->getMessage(), E_USER_NOTICE);
+  }
+
+  return $rtn;
+}
+
+
 
 ///--------------------------------------------------
 ///------------ general-purpose functions -----------
